@@ -50,7 +50,7 @@ you are very much on your own.
 ### Via Go
 
 ```bash
-go install github.com/bladeacer/trst@latest
+go install github.com/bladeacer/trst/cmd/trst@latest
 ```
 
 ### Via binary release
