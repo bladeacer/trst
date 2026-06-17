@@ -1,7 +1,10 @@
 package parser
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -12,6 +15,16 @@ import (
 var supportedExts = map[string]bool{
 	".mp3": true, ".m4a": true, ".flac": true, ".ogg": true, 
 	".mp4": true, ".mkv": true, ".wav": true, ".opus": true,
+}
+
+type FFProbeResponse struct {
+	Streams []struct {
+		CodecName string `json:"codec_name"`
+		Duration  string `json:"duration"`
+	} `json:"streams"`
+	Format struct {
+		Tags map[string]string `json:"tags"`
+	} `json:"format"`
 }
 
 func ParsePath(path string) ([]models.Track, error) {
@@ -51,24 +64,47 @@ func parseFile(fp string) (models.Track, bool) {
 		return models.Track{}, false
 	}
 
-	f, err := os.Open(fp)
-	if err != nil {
-		return models.Track{}, false
-	}
-	defer f.Close()
-
 	track := models.Track{
 		Source:      "local",
 		Description: filepath.Base(fp),
 	}
 
-	m, err := tag.ReadFrom(f)
-	if err == nil {
-		track.Title = m.Title()
-		track.Artist = m.Artist()
-		track.Genre = m.Genre()
+	// 1. Structural parse attempt using container profiles
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", fp)
+	if out, err := cmd.Output(); err == nil {
+		var probe FFProbeResponse
+		if json.Unmarshal(out, &probe) == nil {
+			if probe.Format.Tags != nil {
+				track.Title = probe.Format.Tags["title"]
+				track.Artist = probe.Format.Tags["artist"]
+				track.Genre = probe.Format.Tags["genre"]
+				
+				if bpmStr, ok := probe.Format.Tags["bpm"]; ok {
+					var b int
+					fmt.Sscanf(bpmStr, "%d", &b)
+					track.BPM = b
+				}
+			}
+		}
 	}
 
+	// 2. Fallback to basic tag extraction library
+	if track.Title == "" {
+		f, err := os.Open(fp)
+		if err == nil {
+			m, err := tag.ReadFrom(f)
+			if err == nil {
+				track.Title = m.Title()
+				track.Artist = m.Artist()
+				if track.Genre == "" {
+					track.Genre = m.Genre()
+				}
+			}
+			f.Close()
+		}
+	}
+
+	// 3. Fallback string mapping based on naming formats
 	if track.Title == "" {
 		base := strings.TrimSuffix(filepath.Base(fp), ext)
 		parts := strings.Split(base, " - ")
@@ -82,7 +118,9 @@ func parseFile(fp string) (models.Track, bool) {
 	}
 
 	track.Genre = inferGenre(fp, track.Title, track.Artist, track.Genre)
-	track.BPM = inferBPM(track.Title, track.Genre)
+	if track.BPM == 0 {
+		track.BPM = inferBPM(track.Title, track.Genre)
+	}
 
 	return track, true
 }

@@ -11,5 +11,6 @@ Also abbreviates to "trust me bro my music taste is good".
 ## Dependencies
 
 `ollama`: Local models used to roast ^_^
+`ffmpeg/ffprobe`: Getting audio file metadata
 `yt-dlp` (Optional): Getting details on YouTube/YouTube Music URL.
 `playerctl` (Optional): Getting details on currently playing media
