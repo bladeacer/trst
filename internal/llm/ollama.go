@@ -90,24 +90,30 @@ func PullOllamaModel(modelName string) error {
 func GenerateRoast(backend, model, systemPrompt string, track models.Track, jerkLevel int, allowProfanity bool) (string, error) {
 	fsString := StringifyFSProperties(track)
 
-	lyricsContext := "NOT AVAILABLE (Do NOT mention, quote, or hallucinate any lyrics for this song)."
+	lyricsContext := "NOT AVAILABLE (Do NOT manufacture lyrics)."
 	if track.Lyrics != "" {
 		lyricsContext = fmt.Sprintf("ACTUAL VERIFIED LYRICS: %s", track.Lyrics)
 	}
 
-	profanityRule := "STRICTLY PROHIBITED. Keep your insults completely clean of curse words, slurs, or explicit vulgarity. Be clever, not dirty."
+	profanityRule := "STRICTLY PROHIBITED. Keep your insults clean, smart, and witty without vulgarity."
 	if allowProfanity {
-		profanityRule = "ALLOWED. You can use explicit language and raw profanities if it makes the roast punchier."
+		profanityRule = "ALLOWED. You can use raw profanities if it matches the intensity of your persona."
 	}
 
 	behaviorDirectives := fmt.Sprintf(`
-BEHAVIOR MODIFIERS:
-- Jerk Scale Severity: %d out of 5 (1 = playful/light teasing, 5 = absolutely brutal, soul-crushing, and unapologetically mean).
+CRITICAL BEHAVIOR MODIFIERS:
+- Jerk Scale Severity: %d out of 5 (1 = lowest/gentle teasing, 5 = highest/brutal, soul-crushing teardown). Match this intensity exactly.
 - Profanity Usage: %s
-- Formatting: Use **bold** for loud callouts, and *italics* heavily for descriptive, dry sarcastic stabs. Do NOT use '#' headers.`, jerkLevel, profanityRule)
+
+TEXT FORMATTING RULES (Use sparingly for maximum comedic timing):
+1. Prefer _italics_ (using single underscores) for dry, sarcastic internal thoughts or muttered side-comments.
+2. Use __underlines__ (using double underscores) to draw passive-aggressive emphasis to ridiculous track traits.
+3. Use ==highlights== (using double equal signs) when you want to pinpoint a glaringly awful contradiction.
+4. Use **bold** (using double asterisks) LAST and very sparingly, only when screaming or completely out of patience.
+- Do NOT use markdown headers like '#' or '##'.`, jerkLevel, profanityRule)
 
 	userPrompt := fmt.Sprintf(
-		"Track Title: %s\nArtist: %s\nGenre Context: %s\nBPM Context: %d\nTechnical File Stats: %s\nEmbedded Meta Comment/Description: %s\nLyrics Status: %s\n%s\n\nRoast my musical taste according to your directives.",
+		"Track Title: %s\nArtist: %s\nGenre Context: %s\nBPM Context: %d\nTechnical File Stats: %s\nEmbedded Meta Comment/Description: %s\nLyrics Status: %s\n%s\n\nExecute the roast.",
 		track.Title, track.Artist, track.Genre, track.BPM, fsString, track.Description, lyricsContext, behaviorDirectives,
 	)
 

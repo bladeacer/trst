@@ -13,7 +13,14 @@ Another way you can think of it is: "trust me bro my music taste is totally good
 - Read `.lrc` when found in the same directory as audio file(s).
 - Semantically infer genre via LLM
 - Read file codec, title, description, metadata
-- Choose between personas
+- Choose between personas, options include:
+    - Elitist: a snobby record-store clerk from the 90s
+    - Therapist: a concerned therapist reading into the user's psychological state
+    - Sarcastic: a witty, extremely sarcastic AI
+    - Posh: an aristocratic, deeply passive-aggressive British aristocrat
+    - Investigator: a brilliant, hyper-observant detective like Sherlock Holmes
+    - Spitter: a ruthless underground battle rapper
+
 - Set how much of a jerk the LLM persona can be. On a scale from 1 to 5, defaults to 3.
 - Set whether profanities are allowed in the outputs. Defaults to false.
 > Most models have safety nets baked into their system prompts, if you do want this

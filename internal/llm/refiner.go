@@ -10,7 +10,7 @@ import (
 
 func RefineTrackDetails(backend, model string, track *models.Track) {
 	systemPrompt := `You are an expert musicology classifier database. Analyze the provided metadata details and context strings.
-Deduce the exact musical subgenre (e.g., "Liquid Drum & Bass", "French House", "J-Pop/Anisong", "Math Rock", "Tech House", "Hardstyle").
+Deduce the exact musical subgenre (e.g., "Liquid Drum & Bass", "French House", "J-Pop", "Math Rock", "Tech House", "Hardstyle").
 Provide a realistic tempo BPM matching that subgenre style standard baseline.
 
 CRITICAL: Return ONLY a valid JSON object matching this schema. Do not write markdown, do not write code blocks, do not add introductory text or chat greetings.
