@@ -53,11 +53,23 @@ you are very much on your own.
 go install github.com/bladeacer/trst@latest
 ```
 
-### Via binary release (TBC)
+### Via binary release
 
 Download the latest binary for your platform from the
-[releases page](https://github.com/bladeacer/mns/releases), extract it, and
+[releases page](https://github.com/bladeacer/trst/releases), extract it, and
 place it in your `$PATH`.
+
+Pre-built binaries are available for:
+
+| OS | Architectures |
+| --- | --- |
+| Linux / WSL | `amd64` (x86-64), `arm64` (ARM 64-bit) |
+| macOS | `amd64` (Intel), `arm64` (Apple Silicon) |
+| Windows | `amd64` (x86-64), `arm64` (ARM 64-bit) |
+
+All binaries are fully static (compiled with `CGO_ENABLED=0`) with no
+C runtime dependencies - the Linux archive works on both native Linux
+and WSL without extra setup.
 
 ## Usage
 
