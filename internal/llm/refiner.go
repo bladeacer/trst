@@ -1,53 +1,96 @@
 package llm
 
 import (
+	"bytes"
 	"encoding/json"
-	"strings"
 	"fmt"
+	"net/http"
+	"regexp"
+	"strings"
+
 	"github.com/bladeacer/trst/pkg/models"
 )
 
-type RefinedMetadata struct {
+type ClassificationPayload struct {
 	Genre string `json:"genre"`
 	BPM   int    `json:"bpm"`
 }
 
-// RefineTrackDetails asks the local backend to populate accurate Genre/BPM profiles using structural text context
 func RefineTrackDetails(backend, model string, track *models.Track) {
-	// If the file already has pristine embedded tags, don't override them
-	if track.Genre != "" && track.BPM > 0 && !strings.EqualFold(track.Genre, "Unknown") {
-		return
-	}
+	systemPrompt := `You are an expert musicology classifier database. Analyze the provided metadata details and context strings.
+Deduce the exact musical subgenre (e.g., "Liquid Drum & Bass", "French House", "J-Pop/Anisong", "Math Rock", "Tech House", "Hardstyle").
+Provide a realistic tempo BPM matching that subgenre style standard baseline.
 
-	systemPrompt := "You are a music database system. Return a valid JSON object matching this schema: {\"genre\": \"string\", \"bpm\": integer}. Do not write regular prose, markdown formatting, or triple backticks. Only output valid JSON raw text. If you do not know the song, make a logical guess based on lyrics style or artist name."
-	userPrompt := fmt.Sprintf("Title: %s\nArtist: %s\nLyrics Snippet: %s", track.Title, track.Artist, track.Description)
+CRITICAL: Return ONLY a valid JSON object matching this schema. Do not write markdown, do not write code blocks, do not add introductory text or chat greetings.
+JSON Schema: {"genre": "string", "bpm": integer}`
+
+	// Cleaned user prompt: Removed the instruction to "roast" so the refiner does only classification
+	userPrompt := fmt.Sprintf(
+		"Track Title: %s\nArtist: %s\nInitial Tag Suggestion: %s\nContext Clues & Lyrics: %s",
+		track.Title, track.Artist, track.Genre, track.Description,
+	)
 
 	var jsonRaw string
 	var err error
 
 	if backend == "ollama" {
-		jsonRaw, err = callOllama(model, systemPrompt, userPrompt)
+		jsonRaw, err = callOllamaJSON(model, systemPrompt, userPrompt)
 	}
 
 	if err != nil || jsonRaw == "" {
-		// Silent safety fallbacks if execution loops time out
-		if track.Genre == "" { track.Genre = "Unclassifiable Audio" }
-		if track.BPM == 0 { track.BPM = 100 }
-		return
+		return // Gracefully fall back to local structural defaults
 	}
 
-	var refined RefinedMetadata
-	if err := json.Unmarshal([]byte(jsonRaw), &refined); err == nil {
-		if track.Genre == "" || strings.EqualFold(track.Genre, "Unknown") {
-			track.Genre = refined.Genre
+	// Extract JSON using regex in case the model ignored directions and wrapped text around it
+	jsonRaw = extractJSONBlock(jsonRaw)
+
+	var result ClassificationPayload
+	if err := json.Unmarshal([]byte(jsonRaw), &result); err == nil {
+		if result.Genre != "" && !strings.EqualFold(result.Genre, "unknown") {
+			track.Genre = result.Genre
 		}
-		if track.BPM == 0 {
-			track.BPM = refined.BPM
+		if result.BPM > 0 {
+			track.BPM = result.BPM
 		}
-	} else {
-		// Strip possible model markdown blocks if it disobeyed our system structure instructions
-		// Safety defaults
-		if track.Genre == "" { track.Genre = "Acoustic Audio" }
-		if track.BPM == 0 { track.BPM = 110 }
 	}
+}
+
+// callOllamaJSON uses Ollama's native "format": "json" grammar constraint driver
+func callOllamaJSON(model, system, user string) (string, error) {
+	payload := map[string]any{
+		"model":  model,
+		"prompt": user,
+		"system": system,
+		"stream": false,
+		"format": "json", // Forces Ollama's sampler layer to strictly generate valid structural data
+		"options": map[string]any{
+			"temperature": 0.0, // Eliminate creative randomness for true deterministic parsing
+		},
+	}
+	
+	body, _ := json.Marshal(payload)
+	resp, err := http.Post("http://localhost:11434/api/generate", "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var ollamaResp struct {
+		Response string `json:"response"`
+	}
+	
+	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
+		return "", err
+	}
+	return ollamaResp.Response, nil
+}
+
+// extractJSONBlock strips non-JSON leading/trailing clutter
+func extractJSONBlock(input string) string {
+	re := regexp.MustCompile(`\{[\s\S]*\}`)
+	match := re.FindString(input)
+	if match != "" {
+		return match
+	}
+	return input
 }

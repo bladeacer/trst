@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/bladeacer/trst/pkg/models"
@@ -30,7 +31,6 @@ func AutoSelectOllamaModel() (string, error) {
 		return "", fmt.Errorf("failed reading tags: %w", err)
 	}
 
-	// If no models exist locally, pull llama3.2 automatically
 	if len(tags.Models) == 0 {
 		fallbackModel := "llama3.2:latest"
 		fmt.Printf("--- No models found on your engine. Auto-downloading %s... ---\n", fallbackModel)
@@ -89,14 +89,27 @@ func pullOllamaModel(modelName string) error {
 }
 
 func GenerateRoast(backend, model, systemPrompt string, track models.Track) (string, error) {
-	trackData, _ := json.MarshalIndent(track, "", "  ")
-	userPrompt := fmt.Sprintf("Here is the track profile data. Roast my taste:\n%s", string(trackData))
+	// Format a structured payload ensuring lyrics and properties are front and center
+	userPrompt := fmt.Sprintf(
+		"Track Title: %s\nArtist: %s\nGenre Context: %s\nBPM Context: %d\nFull Audio Clues & Lyrics: %s\n\nRoast my musical taste mercilessly.",
+		track.Title, track.Artist, track.Genre, track.BPM, track.Description,
+	)
+
+	var roast string
+	var err error
 
 	if backend == "ollama" {
-		return callOllama(model, systemPrompt, userPrompt)
+		roast, err = callOllama(model, systemPrompt, userPrompt)
+	} else {
+		roast = "OpenRouter fallback handler..."
 	}
-	
-	return "OpenRouter fallback handler...", nil
+
+	if err != nil {
+		return "", err
+	}
+
+	// Format terminal display text
+	return renderTerminalMarkdown(roast), nil
 }
 
 func callOllama(model, system, user string) (string, error) {
@@ -121,4 +134,17 @@ func callOllama(model, system, user string) (string, error) {
 	b, _ := io.ReadAll(resp.Body)
 	json.Unmarshal(b, &ollamaResp)
 	return ollamaResp.Response, nil
+}
+
+// renderTerminalMarkdown dynamically swaps out Markdown bold characters with functional ANSI styles
+func renderTerminalMarkdown(input string) string {
+	// Replaces **text** with ANSI Intense Bold (\033[1m) and resets (\033[0m)
+	reBold := regexp.MustCompile(`\*\*(.*?)\*\*`)
+	output := reBold.ReplaceAllString(input, "\033[1m$1\033[0m")
+
+	// Clean up any loose hashes (#) left behind by model headers
+	reHeaders := regexp.MustCompile(`(?m)^#+\s+(.*)$`)
+	output = reHeaders.ReplaceAllString(output, "\033[1m\033[4m$1\033[0m") // Underline + Bold headers
+
+	return output
 }

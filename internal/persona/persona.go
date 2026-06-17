@@ -18,7 +18,7 @@ func GetSystemPrompt(name string) string {
 
 // ListPersonas dumps the interactive catalog straight to standard output
 func ListPersonas() {
-	fmt.Println("--- Available Roasting Personas ---")
+	fmt.Println("Available Roasting Personas")
 	for name, desc := range registry {
 		fmt.Printf("- %-10s : %s\n", name, desc)
 	}

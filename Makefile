@@ -1,6 +1,6 @@
 BINARY   ?= trst
 VERSION  ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo "0.1.0")
-LDFLAGS  := -s -w -X github.com/bladeacer/trst/config.AppVersion=$(VERSION)
+LDFLAGS  := -s -w -trimpath -X github.com/bladeacer/trst/config.AppVersion=$(VERSION)
 
 .DEFAULT_GOAL := help
 
@@ -11,8 +11,8 @@ help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Targets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  %-15s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 	@printf "\n"
 
-build: ## Build the trst binary
-	go build -ldflags="$(LDFLAGS)" -o $(BINARY) .
+build: ## Build the trst binary cleanly with optimal stripping
+	go build -ldflags="$(LDFLAGS)" -o $(BINARY) ./cmd/trst
 
 test: ## Run all tests with coverage and badge
 	go test -coverpkg=./... -coverprofile=coverage.out ./tests/... -count=1
