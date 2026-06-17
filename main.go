@@ -1,22 +1,18 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/bladeacer/trst/internal/llm"
 	"github.com/bladeacer/trst/internal/parser"
 	"github.com/bladeacer/trst/internal/persona"
-	"github.com/bladeacer/trst/pkg/models"
 )
 
 type Globals struct {
 	Persona string `help:"The roasting persona to use." default:"sarcastic" short:"p"`
-	Backend string `help:"LLM provider ('ollama' or 'openrouter')." default:"ollama" short:"s"`
+	Backend string `help:"LLM provider (ollama or openrouter)." default:"ollama" short:"s"`
 	Model   string `help:"Model name to target. Auto-detects if empty." default:"" short:"m"`
 }
 
@@ -31,10 +27,10 @@ func (l *LocalCmd) Run(g *Globals) error {
 		return fmt.Errorf("failed parsing path: %w", err)
 	}
 	if len(tracks) == 0 {
-		return fmt.Errorf("no processable audio/video files found in: %s", l.Path)
+		return fmt.Errorf("no processable files found in: %s", l.Path)
 	}
 
-	// For demonstration, we'll roast the first found track
+	// Roast the first found track
 	track := tracks[0]
 
 	// 2. Resolve Persona Prompt
@@ -49,11 +45,11 @@ func (l *LocalCmd) Run(g *Globals) error {
 		}
 		targetModel = detectedModel
 	} else if targetModel == "" {
-		targetModel = "google/gemini-2.5-flash" // Default fallback for openrouter
+		targetModel = "google/gemini-2.5-flash"
 	}
 
 	// 4. Generate the Roast
-	fmt.Printf("\n🔥 Roasting '%s' by '%s' using %s (%s)...\n\n", track.Title, track.Artist, g.Backend, targetModel)
+	fmt.Printf("\n[ROASTING] '%s' by '%s' using %s (%s)...\n\n", track.Title, track.Artist, g.Backend, targetModel)
 	
 	roast, err := llm.GenerateRoast(g.Backend, targetModel, systemPrompt, track)
 	if err != nil {
