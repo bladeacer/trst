@@ -14,7 +14,6 @@ var supportedExts = map[string]bool{
 	".mp4": true, ".mkv": true, ".wav": true, ".opus": true,
 }
 
-// ParsePath reads a file or folder and produces uniform Track models
 func ParsePath(path string) ([]models.Track, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
@@ -63,7 +62,6 @@ func parseFile(fp string) (models.Track, bool) {
 		Description: filepath.Base(fp),
 	}
 
-	// Try reading embedded tags
 	m, err := tag.ReadFrom(f)
 	if err == nil {
 		track.Title = m.Title()
@@ -71,9 +69,7 @@ func parseFile(fp string) (models.Track, bool) {
 		track.Genre = m.Genre()
 	}
 
-	// Fallbacks if metadata tags are blank
 	if track.Title == "" {
-		// e.g., "01. Artist - Song Title.mp3" -> Title: "Song Title", Artist: "Artist"
 		base := strings.TrimSuffix(filepath.Base(fp), ext)
 		parts := strings.Split(base, " - ")
 		if len(parts) >= 2 {
@@ -85,42 +81,71 @@ func parseFile(fp string) (models.Track, bool) {
 		}
 	}
 
-	// Infer configurations based on names or paths
-	track.Genre = inferGenre(fp, track.Genre)
+	track.Genre = inferGenre(fp, track.Title, track.Artist, track.Genre)
 	track.BPM = inferBPM(track.Title, track.Genre)
 
 	return track, true
 }
 
-func inferGenre(fp, existingGenre string) string {
-	if existingGenre != "" {
-		return existingGenre
+func inferGenre(fp, title, artist, existing string) string {
+	if existing != "" && !strings.EqualFold(existing, "Unknown") {
+		return existing
 	}
-	// Fallback to directory names (e.g. music/Synthwave/track.mp3)
-	dir := filepath.Base(filepath.Dir(fp))
-	lowerDir := strings.ToLower(dir)
-	for _, g := range []string{"rock", "pop", "rap", "hiphop", "techno", "lofi", "jazz", "synthwave", "metal"} {
-		if strings.Contains(lowerDir, g) {
-			return g
+
+	searchString := strings.ToLower(fp + " " + title + " " + artist)
+
+	genreMatrix := map[string][]string{
+		"Classical":  {"orchestral", "zimmer", "symphony", "piano", "sonata", "classical", "opera", "ost"},
+		"Metal":      {"metal", "core", "death", "thrash", "slayer", "riff", "djent"},
+		"Synthwave":  {"synthwave", "retrowave", "outrun", "cyberpunk", "1984", "neon"},
+		"Lofi":       {"lofi", "chillhop", "study", "relaxing", "bedroom"},
+		"Techno/EDM":{"techno", "house", "edm", "dance", "remix", "club", "trance", "dubstep"},
+		"Hip-Hop":    {"rap", "hiphop", "trap", "beats", "freestyle", "underground rap"},
+		"Rock":       {"rock", "grunge", "punk", "indie rock", "guitar", "psychedelic"},
+		"Pop":        {"pop", "hits", "top40", "radio", "commercial"},
+	}
+
+	for genre, keywords := range genreMatrix {
+		for _, kw := range keywords {
+			if strings.Contains(searchString, kw) {
+				return genre
+			}
 		}
 	}
-	return "Mystery Sound"
+	return "Unclassifiable Noise"
 }
 
 func inferBPM(title, genre string) int {
-	// A fun heuristics fallback generator since native file tags rarely contain raw structural BPM
 	titleLower := strings.ToLower(title)
-	if strings.Contains(titleLower, "remix") || strings.Contains(titleLower, "club") {
-		return 128
+	
+	if strings.Contains(titleLower, "speed up") || strings.Contains(titleLower, "nightcore") {
+		return 165
 	}
-	switch strings.ToLower(genre) {
-	case "lofi", "jazz":
-		return 75
-	case "techno", "synthwave":
-		return 125
-	case "rap", "hiphop":
-		return 90
+	if strings.Contains(titleLower, "slowed") || strings.Contains(titleLower, "reverb") {
+		return 68
+	}
+
+	switch genre {
+	case "Classical":
+		if strings.Contains(titleLower, "battle") || strings.Contains(titleLower, "chase") {
+			return 140
+		}
+		return 80
+	case "Lofi":
+		return 72
+	case "Hip-Hop":
+		return 92
+	case "Rock":
+		return 115
+	case "Synthwave":
+		return 118
+	case "Techno/EDM":
+		return 128
+	case "Metal":
+		return 145
+	case "Pop":
+		return 120
 	default:
-		return 100 // Safe mid-tempo default
+		return 100
 	}
 }
