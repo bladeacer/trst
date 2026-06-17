@@ -18,12 +18,11 @@ builds:
       - arm64
     ldflags:
       - -s -w -X github.com/bladeacer/trst/config.AppVersion={{.Version}}
-    main: .
+    main: ./cmd/trst
     binary: trst
 
 archives:
-  - name_template: >-
-      trst_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+  - name_template: "trst_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - tar.gz
     format_overrides:
@@ -46,7 +45,7 @@ changelog:
       - "^ci:"
       - "^chore:"
 
+# FIX: Removed the deprecated release.github nesting. 
+# GoReleaser cleanly handles the rest using your GITHUB_TOKEN target repo bounds automatically.
 release:
-  github:
-    owner: bladeacer
-    name: trst
+  github: {}
