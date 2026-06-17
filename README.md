@@ -38,7 +38,7 @@ Those who cannot tolerate humour ranging from light-hearted banter to absolute e
 
 - Set how much of a jerk the LLM persona can be. On a scale from 1 to 5, defaults to 3. 
 1 is lowest, 5 is highest.
-> Note: Hater will still be a hater even you set jerk value to 1
+> Note: Hater will still be a hater even you set jerk value to 1.
 
 - Set whether profanities are allowed in the outputs. Defaults to false.
 > Most models have safety nets baked into their system prompts, if you do want this
@@ -70,6 +70,10 @@ Pre-built binaries are available for:
 All binaries are fully static (compiled with `CGO_ENABLED=0`) with no
 C runtime dependencies - the Linux archive works on both native Linux
 and WSL without extra setup.
+
+### Versioning Notice
+
+This is pre 1.0 software and a work in progress (WIP), expect some breaking changes between updates.
 
 ## Usage
 

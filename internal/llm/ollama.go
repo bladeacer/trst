@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bladeacer/trst/internal/persona"
 	"github.com/bladeacer/trst/internal/ansi"
 	"github.com/bladeacer/trst/pkg/models"
 )
@@ -88,8 +89,8 @@ func PullOllamaModel(modelName string) error {
 	return nil
 }
 
-func GenerateRoast(backend, model, systemPrompt string, track models.Track, jerkLevel int, allowProfanity bool) (string, error) {
-	// 1. Map contextual modifiers
+func GenerateRoast(backend, model, systemPromptName string, track models.Track, jerkLevel int, allowProfanity bool) (string, error) {
+	// 1. Map dynamic lyrics profile parameters
 	lyricsContext := "NOT AVAILABLE"
 	if track.Lyrics != "" {
 		lyricsContext = fmt.Sprintf("Lyrics: %s", track.Lyrics)
@@ -100,32 +101,21 @@ func GenerateRoast(backend, model, systemPrompt string, track models.Track, jerk
 		profanityRule = "ALLOWED. You can use profanity."
 	}
 
-	var toneDirective string
-	switch jerkLevel {
-	case 1:
-		toneDirective = "Gently teasing and light."
-	case 2:
-		toneDirective = "Dry, critical, and condescending."
-	case 4:
-		toneDirective = "Ruthless, mean, and brutal."
-	case 5:
-		toneDirective = "Maximum hostility. Completely destroy their self-esteem."
-	default:
-		toneDirective = "Sharp, highly critical, and biting."
-	}
+	// 2. Fetch structural core persona using the dynamic jerk scale selector architecture
+	baseSystemPrompt := persona.GetSystemPrompt(systemPromptName, jerkLevel)
 
-	// 2. Assemble System Prompt with dynamic Rapper formatting directives
+	// 3. Assemble Spacing Rules cleanly
 	extraDirectives := ""
-	if strings.ToLower(strings.TrimSpace(systemPrompt)) == "spitter" || strings.Contains(strings.ToLower(systemPrompt), "battle rapper") {
+	if strings.ToLower(strings.TrimSpace(systemPromptName)) == "spitter" {
 		extraDirectives = "\n- Spacing Rule: End every single bar/sentence with a raw newline character instantly. Do NOT compile sentences into paragraphs."
 	}
 
-	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Tone Modifier: %s\n- Profanity: %s\n- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.%s", 
-		systemPrompt, toneDirective, profanityRule, extraDirectives)
+	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Profanity: %s\n- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.%s", 
+		baseSystemPrompt, profanityRule, extraDirectives)
 
 	fsString := StringifyFSProperties(track)
 
-	// 4. Construct explicit user prompt payload with dynamic format attacks
+	// 4. Construct user payload matrix
 	userPrompt := fmt.Sprintf(`Track Title: %s
 Artist: %s
 Genre: %s

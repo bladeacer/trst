@@ -78,7 +78,7 @@ func Execute(cfg *AppConfig) {
 
 	// Step 4: Run the live generation pipeline using the specified persona config parameters
 	spinner := ui.NewSpinner(cfg.Persona)
-	roast, err := llm.GenerateRoast(cfg.Backend, targetModel, persona.GetSystemPrompt(cfg.Persona), track, cfg.Jerk, cfg.AllowProfanity)
+	roast, err := llm.GenerateRoast(cfg.Backend, targetModel, cfg.Persona, track, cfg.Jerk, cfg.AllowProfanity)
 	spinner.Stop()
 
 	if err != nil {
