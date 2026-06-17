@@ -130,10 +130,10 @@ FORMATTING RULES:
 - Use **bold** exclusively for extreme emphasis or frustration.
 - Do NOT use highlights (==).
 
-CRITICAL FORMAT ATTACK:
-- If the File Stats or Codec indicate the track is using the OPUS (.opus) format, you must viciously roast the file container format itself, mocking its lossy compression, discord-tier stream quality, or budget storage profile.
+LENGTH CONSTRAINT:
+- Your response must be highly detailed and comprehensive. You must write a minimum of 150 words. Do not wrap up or finish your response early.
 
-Execute the roast matching these style rules now.`,
+Execute the roast matching these style and length rules now.`,
 		track.Title, 
 		track.Artist, 
 		track.Genre, 
