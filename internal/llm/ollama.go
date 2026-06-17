@@ -89,10 +89,21 @@ func pullOllamaModel(modelName string) error {
 }
 
 func GenerateRoast(backend, model, systemPrompt string, track models.Track) (string, error) {
-	// Format a structured payload ensuring lyrics and properties are front and center
+	// Inject strict operational boundaries to prevent lyric hallucinations
+	lyricsContext := "NOT AVAILABLE (Do NOT mention, quote, or hallucinate any lyrics for this song under any circumstance)."
+	if track.Lyrics != "" {
+		lyricsContext = fmt.Sprintf("ACTUAL VERIFIED LYRICS: %s", track.Lyrics)
+	}
+
+	// Enforce output formatting styles directly inside the runtime prompt injection layer
+	formattingDirectives := `
+STYLE RULES:
+- You are encouraged to use **bold** text and *italics* to emphasize your insults and roasts.
+- Do NOT use markdown headers like '#' or '##'.`
+
 	userPrompt := fmt.Sprintf(
-		"Track Title: %s\nArtist: %s\nGenre Context: %s\nBPM Context: %d\nFull Audio Clues & Lyrics: %s\n\nRoast my musical taste mercilessly.",
-		track.Title, track.Artist, track.Genre, track.BPM, track.Description,
+		"Track Title: %s\nArtist: %s\nGenre Context: %s\nBPM Context: %d\nTechnical Info: %s\nLyrics Status: %s\n%s\n\nRoast my musical taste mercilessly.",
+		track.Title, track.Artist, track.Genre, track.BPM, track.Description, lyricsContext, formattingDirectives,
 	)
 
 	var roast string
@@ -108,8 +119,20 @@ func GenerateRoast(backend, model, systemPrompt string, track models.Track) (str
 		return "", err
 	}
 
-	// Format terminal display text
 	return renderTerminalMarkdown(roast), nil
+}
+
+// renderTerminalMarkdown dynamically swaps out Markdown bold/italic characters with functional ANSI styles
+func renderTerminalMarkdown(input string) string {
+	// 1. Handle Bold: Replaces **text** with ANSI Intense Bold (\033[1m)
+	reBold := regexp.MustCompile(`\*\*(.*?)\*\*`)
+	output := reBold.ReplaceAllString(input, "\033[1m$1\033[0m")
+
+	// 2. Handle Italics: Replaces *text* with ANSI Italic Style (\033[3m)
+	reItalic := regexp.MustCompile(`\*(.*?)\*`)
+	output = reItalic.ReplaceAllString(output, "\033[3m$1\033[0m")
+
+	return output
 }
 
 func callOllama(model, system, user string) (string, error) {
@@ -134,17 +157,4 @@ func callOllama(model, system, user string) (string, error) {
 	b, _ := io.ReadAll(resp.Body)
 	json.Unmarshal(b, &ollamaResp)
 	return ollamaResp.Response, nil
-}
-
-// renderTerminalMarkdown dynamically swaps out Markdown bold characters with functional ANSI styles
-func renderTerminalMarkdown(input string) string {
-	// Replaces **text** with ANSI Intense Bold (\033[1m) and resets (\033[0m)
-	reBold := regexp.MustCompile(`\*\*(.*?)\*\*`)
-	output := reBold.ReplaceAllString(input, "\033[1m$1\033[0m")
-
-	// Clean up any loose hashes (#) left behind by model headers
-	reHeaders := regexp.MustCompile(`(?m)^#+\s+(.*)$`)
-	output = reHeaders.ReplaceAllString(output, "\033[1m\033[4m$1\033[0m") // Underline + Bold headers
-
-	return output
 }
