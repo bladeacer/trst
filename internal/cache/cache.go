@@ -9,12 +9,18 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+type TrackMeta struct {
+	Genre     string
+	BPM       int
+	CreatedAt int64
+}
+
 type Service interface {
-	Get(trackKey string) (string, bool)
-	Set(trackKey, roast string) error
+	GetTrackMeta(trackKey string) (*TrackMeta, bool)
+	SetTrackMeta(trackKey string, genre string, bpm int) error
 	ClearAll() error
 	DeleteEntry(trackKey string) error
-	ListAllEntries() ([]string, error) // Updated signature to clean up printing loops
+	ListAllEntries() ([]string, error)
 	Close() error
 }
 
@@ -24,12 +30,12 @@ type TrackCache struct {
 
 type NopCache struct{}
 
-func (n *NopCache) Get(k string) (string, bool) { return "", false }
-func (n *NopCache) Set(k, r string) error       { return nil }
-func (n *NopCache) ClearAll() error             { return nil }
-func (n *NopCache) DeleteEntry(k string) error  { return nil }
-func (n *NopCache) Close() error               { return nil }
-func (n *NopCache) ListAllEntries() ([]string, error) { return nil, nil }
+func (n *NopCache) GetTrackMeta(k string) (*TrackMeta, bool)                  { return nil, false }
+func (n *NopCache) SetTrackMeta(trackKey string, g string, b int) error       { return nil }
+func (n *NopCache) ClearAll() error                                           { return nil }
+func (n *NopCache) DeleteEntry(k string) error                                { return nil }
+func (n *NopCache) Close() error                                              { return nil }
+func (n *NopCache) ListAllEntries() ([]string, error)                         { return nil, nil }
 
 func GetDatabasePath() (string, error) {
 	baseDir, err := os.UserCacheDir()
@@ -49,10 +55,12 @@ func NewTrackCache(dbPath string) (*TrackCache, error) {
 		return nil, err
 	}
 
+	// Migrated schema to track pure musicology parameters
 	schema := `
-	CREATE TABLE IF NOT EXISTS roast_cache (
+	CREATE TABLE IF NOT EXISTS track_metadata_cache (
 		track_key TEXT PRIMARY KEY,
-		roast_output TEXT,
+		genre TEXT,
+		bpm INTEGER,
 		created_at INTEGER
 	);`
 
@@ -68,42 +76,41 @@ func (c *TrackCache) Close() error {
 	return c.db.Close()
 }
 
-func (c *TrackCache) Get(trackKey string) (string, bool) {
-	var roast string
-	var createdAt int64
-
-	query := `SELECT roast_output, created_at FROM roast_cache WHERE track_key = ?`
-	err := c.db.QueryRow(query, trackKey).Scan(&roast, &createdAt)
+func (c *TrackCache) GetTrackMeta(trackKey string) (*TrackMeta, bool) {
+	var meta TrackMeta
+	query := `SELECT genre, bpm, created_at FROM track_metadata_cache WHERE track_key = ?`
+	err := c.db.QueryRow(query, trackKey).Scan(&meta.Genre, &meta.BPM, &meta.CreatedAt)
 	if err != nil {
-		return "", false
+		return nil, false
 	}
 
-	if time.Now().Unix()-createdAt > 7*24*60*60 {
+	// Cache expiration fallback (7 days TTL)
+	if time.Now().Unix()-meta.CreatedAt > 7*24*60*60 {
 		_ = c.DeleteEntry(trackKey)
-		return "", false
+		return nil, false
 	}
 
-	return roast, true
+	return &meta, true
 }
 
-func (c *TrackCache) Set(trackKey, roast string) error {
-	query := `INSERT OR REPLACE INTO roast_cache (track_key, roast_output, created_at) VALUES (?, ?, ?);`
-	_, err := c.db.Exec(query, trackKey, roast, time.Now().Unix())
+func (c *TrackCache) SetTrackMeta(trackKey string, genre string, bpm int) error {
+	query := `INSERT OR REPLACE INTO track_metadata_cache (track_key, genre, bpm, created_at) VALUES (?, ?, ?, ?);`
+	_, err := c.db.Exec(query, trackKey, genre, bpm, time.Now().Unix())
 	return err
 }
 
 func (c *TrackCache) DeleteEntry(trackKey string) error {
-	_, err := c.db.Exec(`DELETE FROM roast_cache WHERE track_key = ?`, trackKey)
+	_, err := c.db.Exec(`DELETE FROM track_metadata_cache WHERE track_key = ?`, trackKey)
 	return err
 }
 
 func (c *TrackCache) ClearAll() error {
-	_, err := c.db.Exec(`DELETE FROM roast_cache`)
+	_, err := c.db.Exec(`DELETE FROM track_metadata_cache`)
 	return err
 }
 
 func (c *TrackCache) ListAllEntries() ([]string, error) {
-	query := `SELECT track_key FROM roast_cache ORDER BY created_at DESC`
+	query := `SELECT track_key FROM track_metadata_cache ORDER BY created_at DESC`
 	rows, err := c.db.Query(query)
 	if err != nil {
 		return nil, err

@@ -29,7 +29,6 @@ type AppConfig struct {
 }
 
 func Execute(cfg *AppConfig) {
-	// 1. Initialize Cache layer
 	store := initCacheStore(cfg.DisableCache)
 	defer store.Close()
 
@@ -37,11 +36,10 @@ func Execute(cfg *AppConfig) {
 		return
 	}
 
-	// 2. Process physical input track file structures
 	track := parseInputTrack(cfg.Path)
 	targetModel := resolveTargetModel(cfg.Model)
 
-	// 3. Resolve local engine models before triggering network steps
+	// Step 1: Auto-select local engine parameters
 	if cfg.Backend == "ollama" && targetModel == "" {
 		localModel, err := llm.AutoSelectOllamaModel()
 		if err != nil {
@@ -57,23 +55,29 @@ func Execute(cfg *AppConfig) {
 		os.Exit(1)
 	}
 
-	// 4. Spin up UI loading feedback for the musicology refinement pass
-	spinner := ui.NewSpinner(cfg.Persona)
-	llm.RefineTrackDetails(cfg.Backend, targetModel, &track)
-	spinner.Stop()
-
-	// 5. Always display the execution header with real, inferred metadata metrics!
-	printExecutionHeader(track, cfg, targetModel) 
-
-	// 6. Check cache utilizing unified title and artist key signature
+	// Step 2: Check database for structural metadata cache hits
 	trackKey := fmt.Sprintf("%s::%s", track.Title, track.Artist)
-	if cachedRoast, found := store.Get(trackKey); found {
-		fmt.Println(cachedRoast)
-		return
+	cachedMeta, found := store.GetTrackMeta(trackKey)
+
+	if found {
+		// Cache Hit! Apply stored metrics immediately
+		track.Genre = cachedMeta.Genre
+		track.BPM = cachedMeta.BPM
+	} else {
+		// Cache Miss. Boot up the spinner and run musicology refinement via LLM
+		spinner := ui.NewSpinner(cfg.Persona)
+		llm.RefineTrackDetails(cfg.Backend, targetModel, &track)
+		spinner.Stop()
+
+		// Save the newly discovered values so we never have to run refinement on this track again
+		_ = store.SetTrackMeta(trackKey, track.Genre, track.BPM)
 	}
 
-	// 7. Fire up the progress slider again for the live generation phase
-	spinner = ui.NewSpinner(cfg.Persona)
+	// Step 3: Always print the execution header with up-to-date metrics
+	printExecutionHeader(track, cfg, targetModel) 
+
+	// Step 4: Run the live generation pipeline using the specified persona config parameters
+	spinner := ui.NewSpinner(cfg.Persona)
 	roast, err := llm.GenerateRoast(cfg.Backend, targetModel, persona.GetSystemPrompt(cfg.Persona), track, cfg.Jerk, cfg.AllowProfanity)
 	spinner.Stop()
 
@@ -82,8 +86,6 @@ func Execute(cfg *AppConfig) {
 		os.Exit(1)
 	}
 
-	// 8. Commit output token payload back to local database instance
-	_ = store.Set(trackKey, roast)
 	fmt.Println(roast)
 }
 

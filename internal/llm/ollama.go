@@ -92,7 +92,7 @@ func GenerateRoast(backend, model, systemPrompt string, track models.Track, jerk
 	// 1. Map contextual modifiers
 	lyricsContext := "NOT AVAILABLE"
 	if track.Lyrics != "" {
-		lyricsContext = fmt.Sprintf("ACTUAL VERIFIED LYRICS: %s", track.Lyrics)
+		lyricsContext = fmt.Sprintf("Lyrics: %s", track.Lyrics)
 	}
 
 	profanityRule := "STRICTLY PROHIBITED. Do not use curse words."
@@ -114,9 +114,8 @@ func GenerateRoast(backend, model, systemPrompt string, track models.Track, jerk
 		toneDirective = "Sharp, highly critical, and biting."
 	}
 
-	// 2. Assemble System Prompt
-	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Tone Modifier: %s\n- Profanity: %s\n- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.", 
-		systemPrompt, toneDirective, profanityRule)
+	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Tone Modifier: %s\n- Profanity: %s- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.", 
+	systemPrompt, toneDirective, profanityRule)
 
 	// 3. Construct explicit user prompt
 	var fsClues []string
