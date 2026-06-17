@@ -2,20 +2,15 @@ package parser
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/bladeacer/trst/pkg/models"
 	"github.com/dhowden/tag"
 )
-
-var supportedExts = map[string]bool{
-	".mp3": true, ".m4a": true, ".flac": true, ".ogg": true, 
-	".mp4": true, ".mkv": true, ".wav": true, ".opus": true,
-}
 
 type FFProbeResponse struct {
 	Streams []struct {
@@ -25,6 +20,11 @@ type FFProbeResponse struct {
 	Format struct {
 		Tags map[string]string `json:"tags"`
 	} `json:"format"`
+}
+
+var supportedExts = map[string]bool{
+	".mp3": true, ".m4a": true, ".flac": true, ".ogg": true, 
+	".mp4": true, ".mkv": true, ".wav": true, ".opus": true,
 }
 
 func ParsePath(path string) ([]models.Track, error) {
@@ -66,10 +66,10 @@ func parseFile(fp string) (models.Track, bool) {
 
 	track := models.Track{
 		Source:      "local",
-		Description: filepath.Base(fp),
+		Description: "",
 	}
 
-	// 1. Structural parse attempt using container profiles
+	// 1. Read metadata via ffprobe
 	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", fp)
 	if out, err := cmd.Output(); err == nil {
 		var probe FFProbeResponse
@@ -78,17 +78,11 @@ func parseFile(fp string) (models.Track, bool) {
 				track.Title = probe.Format.Tags["title"]
 				track.Artist = probe.Format.Tags["artist"]
 				track.Genre = probe.Format.Tags["genre"]
-				
-				if bpmStr, ok := probe.Format.Tags["bpm"]; ok {
-					var b int
-					fmt.Sscanf(bpmStr, "%d", &b)
-					track.BPM = b
-				}
 			}
 		}
 	}
 
-	// 2. Fallback to basic tag extraction library
+	// 2. Tag library fallback
 	if track.Title == "" {
 		f, err := os.Open(fp)
 		if err == nil {
@@ -104,7 +98,7 @@ func parseFile(fp string) (models.Track, bool) {
 		}
 	}
 
-	// 3. Fallback string mapping based on naming formats
+	// 3. Filename splitting fallback
 	if track.Title == "" {
 		base := strings.TrimSuffix(filepath.Base(fp), ext)
 		parts := strings.Split(base, " - ")
@@ -117,73 +111,38 @@ func parseFile(fp string) (models.Track, bool) {
 		}
 	}
 
-	track.Genre = inferGenre(fp, track.Title, track.Artist, track.Genre)
-	if track.BPM == 0 {
-		track.BPM = inferBPM(track.Title, track.Genre)
+	// 4. Look for an associated LRC/lyrics file
+	lyricPath := strings.TrimSuffix(fp, ext) + ".lrc"
+	if _, err := os.Stat(lyricPath); err != nil {
+		// Try .txt variant just in case
+		lyricPath = strings.TrimSuffix(fp, ext) + ".txt"
+	}
+
+	if lyricBytes, err := os.ReadFile(lyricPath); err == nil {
+		track.Description = cleanLyrics(string(lyricBytes))
 	}
 
 	return track, true
 }
 
-func inferGenre(fp, title, artist, existing string) string {
-	if existing != "" && !strings.EqualFold(existing, "Unknown") {
-		return existing
-	}
-
-	searchString := strings.ToLower(fp + " " + title + " " + artist)
-
-	genreMatrix := map[string][]string{
-		"Classical":  {"orchestral", "zimmer", "symphony", "piano", "sonata", "classical", "opera", "ost"},
-		"Metal":      {"metal", "core", "death", "thrash", "slayer", "riff", "djent"},
-		"Synthwave":  {"synthwave", "retrowave", "outrun", "cyberpunk", "1984", "neon"},
-		"Lofi":       {"lofi", "chillhop", "study", "relaxing", "bedroom"},
-		"Techno/EDM":{"techno", "house", "edm", "dance", "remix", "club", "trance", "dubstep"},
-		"Hip-Hop":    {"rap", "hiphop", "trap", "beats", "freestyle", "underground rap"},
-		"Rock":       {"rock", "grunge", "punk", "indie rock", "guitar", "psychedelic"},
-		"Pop":        {"pop", "hits", "top40", "radio", "commercial"},
-	}
-
-	for genre, keywords := range genreMatrix {
-		for _, kw := range keywords {
-			if strings.Contains(searchString, kw) {
-				return genre
-			}
-		}
-	}
-	return "Unclassifiable Noise"
-}
-
-func inferBPM(title, genre string) int {
-	titleLower := strings.ToLower(title)
+// cleanLyrics strips timestamps like [00:12.34] out of standard sync profiles
+func cleanLyrics(raw string) string {
+	re := regexp.MustCompile(`\[\d+:\d+[\.\:]\d+\]`)
+	cleaned := re.ReplaceAllString(raw, "")
 	
-	if strings.Contains(titleLower, "speed up") || strings.Contains(titleLower, "nightcore") {
-		return 165
-	}
-	if strings.Contains(titleLower, "slowed") || strings.Contains(titleLower, "reverb") {
-		return 68
-	}
-
-	switch genre {
-	case "Classical":
-		if strings.Contains(titleLower, "battle") || strings.Contains(titleLower, "chase") {
-			return 140
+	// Group lines and trim whitespace
+	lines := strings.Split(cleaned, "\n")
+	var finalLines []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			finalLines = append(finalLines, trimmed)
 		}
-		return 80
-	case "Lofi":
-		return 72
-	case "Hip-Hop":
-		return 92
-	case "Rock":
-		return 115
-	case "Synthwave":
-		return 118
-	case "Techno/EDM":
-		return 128
-	case "Metal":
-		return 145
-	case "Pop":
-		return 120
-	default:
-		return 100
 	}
+	
+	// Return up to the first 40 lines so we don't blow past context bounds
+	if len(finalLines) > 40 {
+		finalLines = finalLines[:40]
+	}
+	return strings.Join(finalLines, " / ")
 }
