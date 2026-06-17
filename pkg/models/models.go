@@ -7,6 +7,5 @@ type Track struct {
 	Genre       string   `json:"genre,omitempty"`
 	BPM         int      `json:"bpm,omitempty"`
 	DateAllowed string   `json:"date_released,omitempty"`
-	Source      string   `json:"source"` // "local", "playerctl", "youtube"
 	Description string   `json:"description,omitempty"`
 }

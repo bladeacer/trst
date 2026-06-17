@@ -25,8 +25,8 @@ cover: ## Run tests with code coverage (alias for test)
 lint: ## Run golangci-lint
 	golangci-lint run ./...
 
-gowatch: ## Start gowatch for hot-reload development
-	gowatch
+air: ## Start air for hot-reload development
+	air
 
 snapshot: ## Test goreleaser locally (builds all platforms)
 	goreleaser release --snapshot --clean
