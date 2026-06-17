@@ -89,21 +89,26 @@ func pullOllamaModel(modelName string) error {
 }
 
 func GenerateRoast(backend, model, systemPrompt string, track models.Track) (string, error) {
-	// Inject strict operational boundaries to prevent lyric hallucinations
-	lyricsContext := "NOT AVAILABLE (Do NOT mention, quote, or hallucinate any lyrics for this song under any circumstance)."
+	var fsClues []string
+	for k, v := range track.FSProperties {
+		fsClues = append(fsClues, fmt.Sprintf("%s: %s", k, v))
+	}
+	fsString := strings.Join(fsClues, " | ")
+
+	// Explicit lyrics guardrail handling
+	lyricsContext := "NOT AVAILABLE (Do NOT mention, quote, or hallucinate any lyrics for this song)."
 	if track.Lyrics != "" {
 		lyricsContext = fmt.Sprintf("ACTUAL VERIFIED LYRICS: %s", track.Lyrics)
 	}
 
-	// Enforce output formatting styles directly inside the runtime prompt injection layer
 	formattingDirectives := `
 STYLE RULES:
-- You are encouraged to use **bold** text and *italics* to emphasize your insults and roasts.
+- You are encouraged to use **bold** text and *italics* to emphasize your insults.
 - Do NOT use markdown headers like '#' or '##'.`
 
 	userPrompt := fmt.Sprintf(
-		"Track Title: %s\nArtist: %s\nGenre Context: %s\nBPM Context: %d\nTechnical Info: %s\nLyrics Status: %s\n%s\n\nRoast my musical taste mercilessly.",
-		track.Title, track.Artist, track.Genre, track.BPM, track.Description, lyricsContext, formattingDirectives,
+		"Track Title: %s\nArtist: %s\nGenre Context: %s\nBPM Context: %d\nTechnical File Stats: %s\nEmbedded Meta Comment/Description: %s\nLyrics Status: %s\n%s\n\nRoast my musical taste mercilessly.",
+		track.Title, track.Artist, track.Genre, track.BPM, fsString, track.Description, lyricsContext, formattingDirectives,
 	)
 
 	var roast string

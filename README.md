@@ -6,11 +6,13 @@ CLI for local LLMs to roast your music taste.
 
 Short for `track-roast`.
 
-Also abbreviates to "trust me bro my music taste is good".
+Another way you can think of it is: "trust me bro my music taste is totally good".
 
 ## Features
 
 - Read `.lrc` when found in the same directory as audio file(s).
+- Semantically infer genre via LLM
+- Read file codec, title, description, metadata
 
 ## Installation
 
@@ -26,6 +28,11 @@ Download the latest binary for your platform from the
 [releases page](https://github.com/bladeacer/mns/releases), extract it, and
 place it in your `$PATH`.
 
+## Usage
+
+```
+trst
+```
 
 ## Dependencies
 

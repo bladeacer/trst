@@ -25,9 +25,15 @@ CRITICAL: Return ONLY a valid JSON object matching this schema. Do not write mar
 JSON Schema: {"genre": "string", "bpm": integer}`
 
 	// Cleaned user prompt: Removed the instruction to "roast" so the refiner does only classification
+	var fsClues []string
+	for k, v := range track.FSProperties {
+		fsClues = append(fsClues, fmt.Sprintf("%s: %s", k, v))
+	}
+	fsString := strings.Join(fsClues, " | ")
+
 	userPrompt := fmt.Sprintf(
-		"Track Title: %s\nArtist: %s\nInitial Tag Suggestion: %s\nContext Clues & Lyrics: %s",
-		track.Title, track.Artist, track.Genre, track.Description,
+		"Track Title: %s\nArtist: %s\nInitial Tag Suggestion: %s\nTechnical File Stats: %s\nEmbedded Meta Comment/Description: %s",
+		track.Title, track.Artist, track.Genre, fsString, track.Description,
 	)
 
 	var jsonRaw string

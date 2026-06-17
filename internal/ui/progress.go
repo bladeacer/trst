@@ -14,7 +14,7 @@ type Spinner struct {
 
 // NewSpinner initializes and kicks off the visual worker loop
 func NewSpinner(persona string) *Spinner {
-	fmt.Printf("[PERSONA]  %s\n\n", strings.ToUpper(persona))
+	fmt.Printf("[PERSONA]  %s\n\n", strings.ToTitle(persona))
 	
 	s := &Spinner{
 		done: make(chan bool),

@@ -29,9 +29,10 @@ func parseFile(fp string) (models.Track, bool) {
 		return models.Track{}, false
 	}
 
-	track := models.Track{}
-	var fsProperties []string
-	var embeddedDescription string
+	track := models.Track{
+		FSProperties: make(map[string]string),
+	}
+	track.FSProperties["Path"] = fp
 
 	// 1. Run deep container query
 	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", fp)
@@ -40,28 +41,30 @@ func parseFile(fp string) (models.Track, bool) {
 		if json.Unmarshal(out, &probe) == nil {
 			if len(probe.Streams) > 0 {
 				stream := probe.Streams[0]
-				fsProperties = append(fsProperties, "Codec: "+stream.CodecName)
+				track.FSProperties["Codec"] = stream.CodecName
 				if stream.SampleRate != "" {
-					fsProperties = append(fsProperties, "Frequency: "+stream.SampleRate+" Hz")
+					track.FSProperties["Frequency"] = stream.SampleRate + " Hz"
 				}
 			}
 			if probe.Format.BitRate != "" {
 				var br int
 				fmt.Sscanf(probe.Format.BitRate, "%d", &br)
 				if br > 0 {
-					fsProperties = append(fsProperties, fmt.Sprintf("Bitrate: %d kbps", br/1000))
+					track.FSProperties["Bitrate"] = fmt.Sprintf("%d kbps", br/1000)
 				}
 			}
 			if probe.Format.Tags != nil {
 				track.Title = probe.Format.Tags["title"]
 				track.Artist = probe.Format.Tags["artist"]
 				track.Genre = probe.Format.Tags["genre"]
-				// Capture metadata descriptions if your source files hold tag annotations
+				
+				// Map actual file metadata comments/descriptions specifically to Description
 				if desc, ok := probe.Format.Tags["description"]; ok {
-					embeddedDescription = desc
+					track.Description = desc
 				} else if comment, ok := probe.Format.Tags["comment"]; ok {
-					embeddedDescription = comment
+					track.Description = comment
 				}
+				
 				if bpmStr, ok := probe.Format.Tags["bpm"]; ok {
 					fmt.Sscanf(bpmStr, "%d", &track.BPM)
 				}
@@ -78,8 +81,8 @@ func parseFile(fp string) (models.Track, bool) {
 				if track.Genre == "" {
 					track.Genre = m.Genre()
 				}
-				if comment := m.Comment(); comment != "" && embeddedDescription == "" {
-					embeddedDescription = comment
+				if comment := m.Comment(); comment != "" && track.Description == "" {
+					track.Description = comment
 				}
 			}
 			f.Close()
@@ -106,14 +109,6 @@ func parseFile(fp string) (models.Track, bool) {
 	}
 	if lyricBytes, err := os.ReadFile(lyricPath); err == nil {
 		lyricsText = cleanLyrics(string(lyricBytes))
-	}
-
-	// Build context properties: Keep FS stats and tag descriptors isolated but unified
-	fsString := "FS Properties: " + strings.Join(fsProperties, " | ") + " | Path: " + fp
-	if embeddedDescription != "" {
-		track.Description = fsString + " | Meta Description: " + embeddedDescription
-	} else {
-		track.Description = fsString
 	}
 
 	track.Lyrics = lyricsText
