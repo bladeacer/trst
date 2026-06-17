@@ -14,7 +14,7 @@ type Spinner struct {
 
 // NewSpinner initializes and kicks off the visual worker loop
 func NewSpinner(persona string) *Spinner {
-	fmt.Printf("[PERSONA]  %s\n\n", strings.ToTitle(persona))
+	// REMOVED: Redundant console printing logic block that caused the duplicate line
 	
 	s := &Spinner{
 		done: make(chan bool),
@@ -56,7 +56,7 @@ func NewSpinner(persona string) *Spinner {
 // Stop terminates the background printer and sweeps the row clean
 func (s *Spinner) Stop() {
 	s.done <- true
-	// Wipe out the loading line using simple trailing spaces
-	fmt.Print("\r" + strings.Repeat(" ", 60) + "\r")
+	// Wipe out the loading line using trailing spaces to handle varying line lengths completely
+	fmt.Print("\r" + strings.Repeat(" ", 70) + "\r")
 	os.Stdout.Sync()
 }

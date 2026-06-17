@@ -13,6 +13,11 @@ Another way you can think of it is: "trust me bro my music taste is totally good
 - Read `.lrc` when found in the same directory as audio file(s).
 - Semantically infer genre via LLM
 - Read file codec, title, description, metadata
+- Choose between personas
+- Set how much of a jerk the LLM persona can be. On a scale from 1 to 5, defaults to 3.
+- Set whether profanities are allowed in the outputs. Defaults to false.
+> Most models have safety nets baked into their system prompts, if you do want this
+you are very much on your own.
 
 ## Installation
 
