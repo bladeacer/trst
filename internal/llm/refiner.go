@@ -9,11 +9,12 @@ import (
 )
 
 func RefineTrackDetails(backend, model string, track *models.Track) {
+	// Added explicit constraint directly into the system message context
 	systemPrompt := `You are an expert musicology classifier database. Analyze the provided metadata details and context strings.
 Deduce the exact musical subgenre (e.g., "Liquid Drum & Bass", "French House", "J-Pop", "Math Rock", "Tech House", "Hardstyle").
 Provide a realistic tempo BPM matching that subgenre style standard baseline.
 
-CRITICAL: Return ONLY a valid JSON object matching this schema. Do not write markdown, do not write code blocks, do not add introductory text or chat greetings.
+CRITICAL: Return ONLY a raw JSON object matching this schema. Do not write markdown, do not write code blocks, do not add chat greetings.
 JSON Schema: {"genre": "string", "bpm": integer}`
 
 	fsString := StringifyFSProperties(*track)
@@ -27,8 +28,8 @@ JSON Schema: {"genre": "string", "bpm": integer}`
 	var err error
 
 	if backend == "ollama" {
-		// Calls the generalized engine API runner using deterministic JSON schemas
-		jsonRaw, err = CallOllama(model, systemPrompt, userPrompt, true)
+		// FIX: Dropped the 4th parameter 'true' to match CallOllama(model, system, user)
+		jsonRaw, err = CallOllama(model, systemPrompt, userPrompt)
 	}
 
 	if err != nil || jsonRaw == "" {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bladeacer/trst/internal/ansi"
 	"github.com/bladeacer/trst/pkg/models"
 )
 
@@ -88,66 +89,95 @@ func PullOllamaModel(modelName string) error {
 }
 
 func GenerateRoast(backend, model, systemPrompt string, track models.Track, jerkLevel int, allowProfanity bool) (string, error) {
-	fsString := StringifyFSProperties(track)
-
-	lyricsContext := "NOT AVAILABLE (Do NOT manufacture lyrics)."
+	// 1. Map contextual modifiers
+	lyricsContext := "NOT AVAILABLE"
 	if track.Lyrics != "" {
 		lyricsContext = fmt.Sprintf("ACTUAL VERIFIED LYRICS: %s", track.Lyrics)
 	}
 
-	profanityRule := "STRICTLY PROHIBITED. Keep your insults clean, smart, and witty without vulgarity."
+	profanityRule := "STRICTLY PROHIBITED. Do not use curse words."
 	if allowProfanity {
-		profanityRule = "ALLOWED. You can use raw profanities if it matches the intensity of your persona."
+		profanityRule = "ALLOWED. You can use profanity."
 	}
 
-	behaviorDirectives := fmt.Sprintf(`
-CRITICAL BEHAVIOR MODIFIERS:
-- Jerk Scale Severity: %d out of 5 (1 = lowest/gentle teasing, 5 = highest/brutal, soul-crushing teardown). Match this intensity exactly.
-- Profanity Usage: %s
+	var toneDirective string
+	switch jerkLevel {
+	case 1:
+		toneDirective = "Gently teasing and light."
+	case 2:
+		toneDirective = "Dry, critical, and condescending."
+	case 4:
+		toneDirective = "Ruthless, mean, and brutal."
+	case 5:
+		toneDirective = "Maximum hostility. Completely destroy their self-esteem."
+	default:
+		toneDirective = "Sharp, highly critical, and biting."
+	}
 
-TEXT FORMATTING RULES (Use sparingly for maximum comedic timing):
-1. Prefer _italics_ (using single underscores) for dry, sarcastic internal thoughts or muttered side-comments.
-2. Use __underlines__ (using double underscores) to draw passive-aggressive emphasis to ridiculous track traits.
-3. Use ==highlights== (using double equal signs) when you want to pinpoint a glaringly awful contradiction.
-4. Use **bold** (using double asterisks) LAST and very sparingly, only when screaming or completely out of patience.
-- Do NOT use markdown headers like '#' or '##'.`, jerkLevel, profanityRule)
+	// 2. Assemble System Prompt
+	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Tone Modifier: %s\n- Profanity: %s\n- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.", 
+		systemPrompt, toneDirective, profanityRule)
 
-	userPrompt := fmt.Sprintf(
-		"Track Title: %s\nArtist: %s\nGenre Context: %s\nBPM Context: %d\nTechnical File Stats: %s\nEmbedded Meta Comment/Description: %s\nLyrics Status: %s\n%s\n\nExecute the roast.",
-		track.Title, track.Artist, track.Genre, track.BPM, fsString, track.Description, lyricsContext, behaviorDirectives,
+	// 3. Construct explicit user prompt
+	var fsClues []string
+	for k, v := range track.FSProperties {
+		fsClues = append(fsClues, fmt.Sprintf("%s: %s", k, v))
+	}
+	fsString := strings.Join(fsClues, " | ")
+
+	// FIX: Clean, un-nested raw backticks block with exactly 7 explicit variables.
+	// Removed the extra inner '%d' verb from the rule description to make it perfectly safe.
+	userPrompt := fmt.Sprintf(`Track Title: %s
+Artist: %s
+Genre: %s
+BPM: %d
+File Stats: %s
+Description: %s
+Lyrics: %s
+
+FORMATTING RULES:
+- Use _italics_ for overly sarcastic adjectives.
+- Use __underlines__ to call out direct tech numbers and stats (e.g., __120 BPM__).
+- Use **bold** exclusively for extreme emphasis or frustration.
+- Do NOT use highlights (==).
+
+Execute the roast matching these style rules now.`,
+		track.Title, 
+		track.Artist, 
+		track.Genre, 
+		track.BPM, 
+		fsString, 
+		track.Description, 
+		lyricsContext,
 	)
 
 	var roast string
 	var err error
 
 	if backend == "ollama" {
-		roast, err = CallOllama(model, systemPrompt, userPrompt, false)
+		roast, err = CallOllama(model, rigorousSystemPrompt, userPrompt)
 	} else {
-		roast = "OpenRouter fallback handler..."
+		return "", fmt.Errorf("unsupported backend: %s", backend)
 	}
 
 	if err != nil {
 		return "", err
 	}
 
-	return RenderTerminalMarkdown(roast), nil
+	return ansi.RenderTerminalMarkdown(roast), nil
 }
 
-func CallOllama(model, system, user string, jsonMode bool) (string, error) {
+func CallOllama(model, system, user string) (string, error) {
 	payload := map[string]any{
 		"model":  model,
 		"prompt": user,
 		"system": system,
 		"stream": false,
+		"options": map[string]any{
+			"temperature": 0.7, // Balances creative insult variance with formatting compliance
+		},
 	}
 
-	if jsonMode {
-		payload["format"] = "json"
-		payload["options"] = map[string]any{
-			"temperature": 0.0,
-		}
-	}
-	
 	body, _ := json.Marshal(payload)
 	resp, err := http.Post("http://localhost:11434/api/generate", "application/json", bytes.NewBuffer(body))
 	if err != nil {
@@ -158,8 +188,8 @@ func CallOllama(model, system, user string, jsonMode bool) (string, error) {
 	var ollamaResp struct {
 		Response string `json:"response"`
 	}
-	
 	b, _ := io.ReadAll(resp.Body)
-	json.Unmarshal(b, &ollamaResp)
+	_ = json.Unmarshal(b, &ollamaResp)
+
 	return ollamaResp.Response, nil
 }

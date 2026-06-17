@@ -11,7 +11,8 @@ Another way you can think of it is: "trust me bro my music taste is totally good
 ## Features
 
 - Read `.lrc` when found in the same directory as audio file(s).
-- Semantically infer genre via LLM
+- Semantically infer genre/sub-genre (best effort basis) via LLM
+- Local metadata cache for parsed songs
 - Read file codec, title, description, metadata
 - Choose between personas, options include:
     - Elitist: a snobby record-store clerk from the 90s
@@ -25,6 +26,7 @@ Another way you can think of it is: "trust me bro my music taste is totally good
 - Set whether profanities are allowed in the outputs. Defaults to false.
 > Most models have safety nets baked into their system prompts, if you do want this
 you are very much on your own.
+
 
 ## Installation
 
