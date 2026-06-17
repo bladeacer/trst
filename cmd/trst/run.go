@@ -9,6 +9,7 @@ import (
 	"github.com/bladeacer/trst/internal/llm"
 	"github.com/bladeacer/trst/internal/parser"
 	"github.com/bladeacer/trst/internal/persona"
+	"github.com/bladeacer/trst/internal/ui" // Import your ui engine package safely
 	"github.com/bladeacer/trst/pkg/models"
 )
 
@@ -28,6 +29,7 @@ type AppConfig struct {
 }
 
 func Execute(cfg *AppConfig) {
+	// 1. Initialize Cache layer
 	store := initCacheStore(cfg.DisableCache)
 	defer store.Close()
 
@@ -35,17 +37,11 @@ func Execute(cfg *AppConfig) {
 		return
 	}
 
+	// 2. Process physical input track file structures
 	track := parseInputTrack(cfg.Path)
 	targetModel := resolveTargetModel(cfg.Model)
 
-	// Step 1: Check standard local file cache using Title & Artist signature keys
-	trackKey := fmt.Sprintf("%s::%s", track.Title, track.Artist)
-	if cachedRoast, found := store.Get(trackKey); found {
-		fmt.Println(cachedRoast)
-		return
-	}
-
-	// Step 2: Auto-select local engine parameters before running classifications or generations
+	// 3. Resolve local engine models before triggering network steps
 	if cfg.Backend == "ollama" && targetModel == "" {
 		localModel, err := llm.AutoSelectOllamaModel()
 		if err != nil {
@@ -61,23 +57,37 @@ func Execute(cfg *AppConfig) {
 		os.Exit(1)
 	}
 
-	// =========================================================================
-	// FIX: Explicitly execute the musicology refinement layer here!
-	// =========================================================================
+	// 4. Spin up UI loading feedback for the musicology refinement pass
+	spinner := ui.NewSpinner(cfg.Persona)
 	llm.RefineTrackDetails(cfg.Backend, targetModel, &track)
-	// =========================================================================
+	spinner.Stop()
 
+	// 5. Always display the execution header with real, inferred metadata metrics!
 	printExecutionHeader(track, cfg, targetModel) 
-	
+
+	// 6. Check cache utilizing unified title and artist key signature
+	trackKey := fmt.Sprintf("%s::%s", track.Title, track.Artist)
+	if cachedRoast, found := store.Get(trackKey); found {
+		fmt.Println(cachedRoast)
+		return
+	}
+
+	// 7. Fire up the progress slider again for the live generation phase
+	spinner = ui.NewSpinner(cfg.Persona)
 	roast, err := llm.GenerateRoast(cfg.Backend, targetModel, persona.GetSystemPrompt(cfg.Persona), track, cfg.Jerk, cfg.AllowProfanity)
+	spinner.Stop()
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "generation failed: %v\n", err)
 		os.Exit(1)
 	}
 
+	// 8. Commit output token payload back to local database instance
 	_ = store.Set(trackKey, roast)
 	fmt.Println(roast)
 }
+
+// --- Isolated Business Logic Helper Engines ---
 
 func initCacheStore(disabled bool) cache.Service {
 	if disabled {
@@ -127,7 +137,7 @@ func interceptAdminCommands(cfg *AppConfig, store cache.Service) bool {
 		}
 		fmt.Println("--- CURRENT CACHED ROASTS ---")
 		for _, key := range entries {
-			fmt.Printf("- %s\n", key) // Prints clean Global Track Keys safely
+			fmt.Printf("- %s\n", key)
 		}
 		return true
 	}
