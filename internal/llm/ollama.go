@@ -114,18 +114,18 @@ func GenerateRoast(backend, model, systemPrompt string, track models.Track, jerk
 		toneDirective = "Sharp, highly critical, and biting."
 	}
 
-	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Tone Modifier: %s\n- Profanity: %s- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.", 
-	systemPrompt, toneDirective, profanityRule)
-
-	// 3. Construct explicit user prompt
-	var fsClues []string
-	for k, v := range track.FSProperties {
-		fsClues = append(fsClues, fmt.Sprintf("%s: %s", k, v))
+	// 2. Assemble System Prompt with dynamic Rapper formatting directives
+	extraDirectives := ""
+	if strings.ToLower(strings.TrimSpace(systemPrompt)) == "spitter" || strings.Contains(strings.ToLower(systemPrompt), "battle rapper") {
+		extraDirectives = "\n- Spacing Rule: End every single bar/sentence with a raw newline character instantly. Do NOT compile sentences into paragraphs."
 	}
-	fsString := strings.Join(fsClues, " | ")
 
-	// FIX: Clean, un-nested raw backticks block with exactly 7 explicit variables.
-	// Removed the extra inner '%d' verb from the rule description to make it perfectly safe.
+	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Tone Modifier: %s\n- Profanity: %s\n- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.%s", 
+		systemPrompt, toneDirective, profanityRule, extraDirectives)
+
+	fsString := StringifyFSProperties(track)
+
+	// 4. Construct explicit user prompt payload with dynamic format attacks
 	userPrompt := fmt.Sprintf(`Track Title: %s
 Artist: %s
 Genre: %s
@@ -140,12 +140,15 @@ FORMATTING RULES:
 - Use **bold** exclusively for extreme emphasis or frustration.
 - Do NOT use highlights (==).
 
+CRITICAL FORMAT ATTACK:
+- If the File Stats or Codec indicate the track is using the OPUS (.opus) format, you must viciously roast the file container format itself, mocking its lossy compression, discord-tier stream quality, or budget storage profile.
+
 Execute the roast matching these style rules now.`,
 		track.Title, 
 		track.Artist, 
 		track.Genre, 
 		track.BPM, 
-		fsString, 
+		fsString,
 		track.Description, 
 		lyricsContext,
 	)

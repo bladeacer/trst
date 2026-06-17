@@ -10,9 +10,12 @@ var (
 	reHighlight = regexp.MustCompile(`==([^=]+?)==`)
 	reBold      = regexp.MustCompile(`\*\*([^\*]+?)\*\*`)
 	reItalic    = regexp.MustCompile(`_([^_]+?)_`)
+	
+	// Captures single asterisk expressions like *sigh*, *facepalm*, *rolls eyes*
+	reAction    = regexp.MustCompile(`\*([^\*]+?)\*`)
 )
 
-// Render TerminalMarkdown safely converts syntax blocks into ANSI escape sequences.
+// RenderTerminalMarkdown safely converts syntax blocks into ANSI escape sequences.
 func RenderTerminalMarkdown(input string) string {
 	output := input
 
@@ -27,6 +30,9 @@ func RenderTerminalMarkdown(input string) string {
 
 	// 4. Italics -> ANSI Italic (\033[3m)
 	output = reItalic.ReplaceAllString(output, "\033[3m$1\033[0m")
+
+	// 5. Single Asterisk Actions -> ANSI Dim + Italic (\033[2;3m) for theatrical sighs
+	output = reAction.ReplaceAllString(output, "\033[2;3m$1\033[0m")
 
 	return output
 }
