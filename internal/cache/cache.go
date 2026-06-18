@@ -15,12 +15,18 @@ type TrackMeta struct {
 	CreatedAt int64
 }
 
+// CacheEntry marries the key identifier with its structured payload metadata
+type CacheEntry struct {
+	TrackKey string
+	Meta     TrackMeta
+}
+
 type Service interface {
 	GetTrackMeta(trackKey string) (*TrackMeta, bool)
 	SetTrackMeta(trackKey string, genre string, bpm int) error
 	ClearAll() error
 	DeleteEntry(trackKey string) error
-	ListAllEntries() ([]string, error)
+	ListAllEntries() ([]CacheEntry, error) // Updated signature
 	Close() error
 }
 
@@ -30,12 +36,12 @@ type TrackCache struct {
 
 type NopCache struct{}
 
-func (n *NopCache) GetTrackMeta(k string) (*TrackMeta, bool)                  { return nil, false }
-func (n *NopCache) SetTrackMeta(trackKey string, g string, b int) error       { return nil }
+func (n *NopCache) GetTrackMeta(k string) (*TrackMeta, bool)                 { return nil, false }
+func (n *NopCache) SetTrackMeta(trackKey string, g string, b int) error      { return nil }
 func (n *NopCache) ClearAll() error                                           { return nil }
 func (n *NopCache) DeleteEntry(k string) error                                { return nil }
 func (n *NopCache) Close() error                                              { return nil }
-func (n *NopCache) ListAllEntries() ([]string, error)                         { return nil, nil }
+func (n *NopCache) ListAllEntries() ([]CacheEntry, error)                        { return nil, nil }
 
 func GetDatabasePath() (string, error) {
 	baseDir, err := os.UserCacheDir()
@@ -109,19 +115,26 @@ func (c *TrackCache) ClearAll() error {
 	return err
 }
 
-func (c *TrackCache) ListAllEntries() ([]string, error) {
-	query := `SELECT track_key FROM track_metadata_cache ORDER BY created_at DESC`
+// ListAllEntries scans and constructs the full entry values sorted by insertion history
+func (c *TrackCache) ListAllEntries() ([]CacheEntry, error) {
+	query := `SELECT track_key, genre, bpm, created_at FROM track_metadata_cache ORDER BY created_at DESC`
 	rows, err := c.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var results []string
+	var results []CacheEntry
 	for rows.Next() {
-		var key string
-		if err := rows.Scan(&key); err == nil {
-			results = append(results, key)
+		var entry CacheEntry
+		err := rows.Scan(
+			&entry.TrackKey,
+			&entry.Meta.Genre,
+			&entry.Meta.BPM,
+			&entry.Meta.CreatedAt,
+		)
+		if err == nil {
+			results = append(results, entry)
 		}
 	}
 	return results, nil

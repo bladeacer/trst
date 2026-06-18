@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/bladeacer/trst/internal/cache"
 	"github.com/bladeacer/trst/internal/llm"
@@ -137,14 +138,24 @@ func interceptAdminCommands(cfg *AppConfig, store cache.Service) bool {
 			fmt.Println("Cache is completely empty.")
 			return true
 		}
-		fmt.Println("--- CURRENT CACHED ROASTS ---")
-		for _, key := range entries {
-			fmt.Printf("- %s\n", key)
-		}
-		return true
-	}
 
-	if cfg.List {
+		fmt.Println("--- CURRENT CACHED ROASTS ---")
+		for _, entry := range entries {
+			// Convert the saved timestamp into a readable date format
+			savedTime := time.Unix(entry.Meta.CreatedAt, 0).Format("2006-01-02 15:04")
+
+			// Print structured track details inline
+			fmt.Printf("- %-40s | Genre: %-12s | BPM: %-3d | Saved: %s\n", 
+			entry.TrackKey, 
+			entry.Meta.Genre, 
+			entry.Meta.BPM, 
+			savedTime,
+		)
+	}
+	return true
+}
+
+if cfg.List {
 		persona.ListPersonas()
 		return true
 	}
