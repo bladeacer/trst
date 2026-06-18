@@ -12,6 +12,9 @@ Another way you can think of it is: "trust me bro my music taste is totally good
 
 Those who cannot tolerate humour ranging from light-hearted banter to absolute emotional damage.
 
+> If you do not want the LLM, there is a scale of "how much of a jerk the LLM can be".
+> This is mentioned below
+
 ## Features
 
 - Read `.lrc` when found in the same directory as audio file(s).
@@ -21,20 +24,20 @@ Those who cannot tolerate humour ranging from light-hearted banter to absolute e
 
 - Read file codec, title, description, metadata
 
-- Choose between distinct personas, including:
-    - Elitist: A snobby 90s record-store clerk who despises everything mainstream.
-    - Therapist: A concerned professional diagnosing your fragile psyche via your tragic music choices.
-    - Sarcastic: A hyper-sassy, cynical lady dispensing raw, unfiltered mockery and heavy side-eye.
-    - Posh: A passive-aggressive British aristocrat dispensing polite, devastating insults over tea.
-    - Detective: A Sherlock Holmes-inspired sleuth treating audio file tags as an active crime scene.
-    - Spitter: A ferocious American battle rapper delivering technical, multi-syllabic rhyming bars line by line.
-    - Influencer: A cringe-inducing content creator plagued by toxic enthusiasm and desperate vocal fry.
-    - Brainrot: A chaotic stream of internet culture, emoji tags, and non-repeating Gen Z slang.
-    - Pianist: A conservative classical concert pianist appalled by modern production shortcuts.
-    - Hater: A relentlessly toxic internet troll providing pure, bad-faith hostility regardless of configurations.
-    - Normie: A delusional, middle-school pop consumer convinced they possess elite musical knowledge.
-    - Parent: A traditional, deeply disappointed Asian parent wielding the threat of the flying house slipper.
-    - Nerd: A pedantic, socially awkward pedant starting every sentence with 'Erm, actually...' to obsess over technical metadata flaws.
+- *Choose between distinct personas*, including:
+    - **brainrot**: A chaotic, hyperactive stream of raw Unicode emojis and stunted streamer slang. Decries your "L codec choices" with zero aura.
+    - **detective**: A Sherlock Holmes-inspired sleuth treating your lossy files and neglected metadata as an active crime scene.
+    - **elitist**: A snobby 90s record-store clerk who despises the mainstream and sneers at digital peasant compression profiles.
+    - **hater**: A relentlessly toxic internet troll providing pure, bad-faith hostility regardless of configurations.
+    - **influencer**: A cringe-inducing content creator plagued by toxic enthusiasm, over-inflated vocal fry, and desperate engagement metrics.
+    - **nerd**: A pedantic, socially awkward tech nerd starting sentences with _"Erm, actually..."_ to viciously analyse your compressed frequency cutoff maps.
+    - **normie**: A delusional TikTok-era middle-schooler defending generic radio pop charts using shallow arguments.
+    - **parent**: A traditional immigrant Asian parent comparing your lazy file selection directly to your flawless cousin Timmy (who gets straight A+). Wields the slipper (if yk yk).
+    - **pianist**: An arrogant classical conservatory elite appalled by lossy shortcuts that clip essential musical harmonics.
+    - **posh**: A passive-aggressive British aristocrat deploying devastatingly polite backhanded insults over high tea regarding your low-budget container formats.
+    - **sarcastic**: A hyper-sassy, cynical lady dispensing raw, zero-filter side-eye directly at your audio storage compression standards.
+    - **spitter**: A ferocious battle rapper delivering fast-paced cadences in snappy 8-12 word bars, targeting your low-bitrate MP3 choices.
+    - **therapist**: A concerned professional diagnosing your fragile psychological state based on your severe lack of metadata care.
 
 - Set how much of a jerk the LLM persona can be. On a scale from 1 to 5, defaults to 3. 
 1 is lowest, 5 is highest.
