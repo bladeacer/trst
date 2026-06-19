@@ -12,7 +12,7 @@ Another way you can think of it is: "trust me bro my music taste is totally good
 
 Those who cannot tolerate humour ranging from light-hearted banter to absolute emotional damage.
 
-> If you do not want the LLM, there is a scale of "how much of a jerk the LLM can be".
+> If you do not want the LLM to be too mean, there is a scale of "how much of a jerk the LLM can be".
 > This is mentioned below
 
 ## Features
