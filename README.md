@@ -91,7 +91,8 @@ This is pre 1.0 software and a work in progress (WIP), expect some breaking chan
 Install and start `ollama` first.
 > See [ollama's website](https://ollama.com/) for more details.
 
-```
+```bash
+ollama pull llama3.2 # or use any other model of your choice
 trst
 ```
 
@@ -101,6 +102,14 @@ trst
 - `ffmpeg/ffprobe`: Handles deep container queries to extract core audio file metadata.
 - `yt-dlp` (Optional): Pulls live details and metadata directly from YouTube/YouTube Music URLs.
 - `playerctl` (Optional): Queries MPRIS D-Bus interfaces to roast currently playing media.
+
+## Planned Features
+
+- Provide song from remote URL via `yt-dlp`
+- Roasts on folder/album or playlist (local/remote)
+- Better analysis into audio files (time signature, frequency range)
+- Continually roasts currently playing media via `playerctl`
+- OpenRouter support
 
 ## LLM Usage Disclosure
 
@@ -138,4 +147,4 @@ This CLI was made possible by the following open-source libraries
 - [`modernc.org/sqlite`](https://gitlab.com/cznic/sqlite): A pure Go, zero-dependency SQLite driver that requires no CGO implementation.
 - [`dhowden/tag`](https://github.com/dhowden/tag): A clean audio metadata parsing engine used for reading track container properties.
 - [`nbedos/termtosvg`](https://github.com/nbedos/termtosvg): Record terminal to svg, public archived but still works like a charm.
-- [`asciinema/agg`](https://github.com/asciinema/agg): asciinema gif generator  
+- [`asciinema/agg`](https://github.com/asciinema/agg): asciinema gif generator.
