@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg id="terminal" baseProfile="full" viewBox="0 0 656 325" width="656" version="1.1"
+     xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <termtosvg:template_settings xmlns:termtosvg="https://github.com/nbedos/termtosvg">
+            <termtosvg:screen_geometry columns="82" rows="19"/>
+            <termtosvg:animation type="css"/>
+        </termtosvg:template_settings>
+        <style type="text/css" id="generated-style">
+            /* Will be overwritten by termtosvg */
+        </style>
+        <style type="text/css" id="user-style">
+            .foreground { fill: #c6c8d1; }
+            .background { fill: #161821; }
+
+            /* Iceberg ANSI Colors */
+            .color0  { fill: #161821; } /* Black */
+            .color1  { fill: #e27878; } /* Red */
+            .color2  { fill: #b4be82; } /* Green */
+            .color3  { fill: #e2a478; } /* Yellow */
+            .color4  { fill: #84a0c6; } /* Blue */
+            .color5  { fill: #a093c7; } /* Magenta */
+            .color6  { fill: #89b8c2; } /* Cyan */
+            .color7  { fill: #c6c8d1; } /* White */
+            .color8  { fill: #6b7089; } /* Bright Black */
+            .color9  { fill: #e98989; } /* Bright Red */
+            .color10 { fill: #c0ca95; } /* Bright Green */
+            .color11 { fill: #e9b189; } /* Bright Yellow */
+            .color12 { fill: #91acd1; } /* Bright Blue */
+            .color13 { fill: #ada0d3; } /* Bright Magenta */
+            .color14 { fill: #95c4ce; } /* Bright Cyan */
+            .color15 { fill: #d2d4de; } /* Bright White */
+
+            font-family: Monaco, monospace;
+        </style>
+    </defs>
+    <svg id="screen" width="656" viewBox="0 0 656 323" preserveAspectRatio="xMidYMin meet">
+        </svg>
+</svg>
+

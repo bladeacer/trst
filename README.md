@@ -2,7 +2,7 @@
 
 # trst
 
-![Demo Video](./demo.mp4)
+![Demo SVG](./demo.svg)
 
 CLI for local LLMs to roast your music taste.
 
@@ -89,7 +89,7 @@ Install and start `ollama` first.
 
 ```
 trst
-    ```
+```
 
 ## Dependencies
 
@@ -133,4 +133,4 @@ This CLI was made possible by the following open-source libraries
 
 - [`modernc.org/sqlite`](https://gitlab.com/cznic/sqlite): A pure Go, zero-dependency SQLite driver that requires no CGO implementation.
 - [`dhowden/tag`](https://github.com/dhowden/tag): A clean audio metadata parsing engine used for reading track container properties.
-- [`charmbracelet/vhs`](https://github.com/charmbracelet/vhs): CLI video recorder, needs Chromium and is kinda slow though it does the job.
+- [`nbedos/termtosvg`](https://github.com/nbedos/termtosvg): Record terminal to svg, public archived but still works like a charm.
