@@ -4,7 +4,7 @@ LDFLAGS  := -s -w -trimpath -X github.com/bladeacer/trst/config.AppVersion=$(VER
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test lint gowatch snapshot tag fmt
+.PHONY: help build test lint snapshot tag fmt cover cover-html air
 
 help: ## Show this help
 	@printf "\nUsage: make <target>\n\n"
@@ -22,11 +22,15 @@ test: ## Run all tests with coverage and badge
 cover: ## Run tests with code coverage (alias for test)
 	$(MAKE) test
 
+cover-html: ## Runs tests with code coverage, renders browser tab for inspection
+	$(MAKE) cover
+	go tool cover -html=coverage.out
+
 lint: ## Run golangci-lint
 	golangci-lint run ./...
 
 fmt: ## Formats source code
-	rg --files --type go | xargs gofmt -w -s
+	rg --no-ignore --files --type go | xargs gofmt -w -s
 
 air: ## Start air for hot-reload development
 	air

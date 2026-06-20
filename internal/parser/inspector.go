@@ -31,93 +31,128 @@ func parseFile(fp string) (models.Track, bool) {
 	}
 
 	track := models.Track{
-		FSProperties: make(map[string]string),
-	}
-	track.FSProperties["Path"] = fp
-
-	// 1. Run deep container query
-	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", fp)
-	if out, err := cmd.Output(); err == nil {
-		var probe FFProbeResponse
-		if json.Unmarshal(out, &probe) == nil {
-			if len(probe.Streams) > 0 {
-				stream := probe.Streams[0]
-				track.FSProperties["Codec"] = stream.CodecName
-				if stream.SampleRate != "" {
-					track.FSProperties["Frequency"] = stream.SampleRate + " Hz"
-				}
-			}
-			if probe.Format.BitRate != "" {
-				// strconv.Atoi is faster and more idiomatic for simple strings to ints
-				if br, err := strconv.Atoi(probe.Format.BitRate); err == nil && br > 0 {
-					track.FSProperties["Bitrate"] = fmt.Sprintf("%d kbps", br/1000)
-				}
-			}
-			if probe.Format.Tags != nil {
-				track.Title = probe.Format.Tags["title"]
-				track.Artist = probe.Format.Tags["artist"]
-				track.Genre = probe.Format.Tags["genre"]
-
-				// Map actual file metadata comments/descriptions specifically to Description
-				if desc, ok := probe.Format.Tags["description"]; ok {
-					track.Description = desc
-				} else if comment, ok := probe.Format.Tags["comment"]; ok {
-					track.Description = comment
-				}
-
-				if bpmStr, ok := probe.Format.Tags["bpm"]; ok {
-					if bpm, err := strconv.Atoi(bpmStr); err == nil {
-						track.BPM = bpm
-					}
-				}
-			}
-		}
+		FSProperties: map[string]string{"Path": fp},
 	}
 
-	// 2. Tag library fallback
+	// Step 1: Deep container query via ffprobe
+	parseFFProbe(fp, &track)
+
+	// Step 2: Native tag library fallback
 	if track.Title == "" {
-		if f, err := os.Open(fp); err == nil {
-			if m, err := tag.ReadFrom(f); err == nil {
-				track.Title = m.Title()
-				track.Artist = m.Artist()
-				if track.Genre == "" {
-					track.Genre = m.Genre()
-				}
-				if comment := m.Comment(); comment != "" && track.Description == "" {
-					track.Description = comment
-				}
-			}
-			f.Close()
-		}
+		parseNativeTags(fp, &track)
 	}
 
-	// 3. Structural fallback naming conversions
+	// Step 3: Structural filename fallback
 	if track.Title == "" {
-		base := strings.TrimSuffix(filepath.Base(fp), ext)
-		if parts := strings.Split(base, " - "); len(parts) >= 2 {
-			track.Artist = strings.TrimSpace(parts[0])
-			track.Title = strings.TrimSpace(parts[1])
-		} else {
-			track.Title = base
-			track.Artist = "Unknown Artist"
-		}
+		parseFilenameFallback(fp, ext, &track)
 	}
 
-	// 4. Lyrics retrieval
-	var lyricsText string
-	lyricPath := strings.TrimSuffix(fp, ext) + ".lrc"
-	if _, err := os.Stat(lyricPath); err != nil {
-		lyricPath = strings.TrimSuffix(fp, ext) + ".txt"
-	}
-	if lyricBytes, err := os.ReadFile(lyricPath); err == nil {
-		lyricsText = cleanLyrics(string(lyricBytes))
-	}
-
-	track.Lyrics = lyricsText
+	// Step 4: Lyrics retrieval
+	track.Lyrics = readLyrics(fp, ext)
 
 	if track.Genre == "" {
 		track.Genre = "Unknown"
 	}
 
 	return track, true
+}
+
+// --- EXTRACTED COMPONENT HELPERS ---
+
+func parseFFProbe(fp string, track *models.Track) {
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", fp)
+	out, err := cmd.Output()
+	if err != nil {
+		return
+	}
+
+	var probe FFProbeResponse
+	if err := json.Unmarshal(out, &probe); err != nil {
+		return
+	}
+
+	if len(probe.Streams) > 0 {
+		stream := probe.Streams[0]
+		track.FSProperties["Codec"] = stream.CodecName
+		if stream.SampleRate != "" {
+			track.FSProperties["Frequency"] = stream.SampleRate + " Hz"
+		}
+	}
+
+	if probe.Format.BitRate != "" {
+		if br, err := strconv.Atoi(probe.Format.BitRate); err == nil && br > 0 {
+			track.FSProperties["Bitrate"] = fmt.Sprintf("%d kbps", br/1000)
+		}
+	}
+
+	if probe.Format.Tags == nil {
+		return
+	}
+
+	tags := probe.Format.Tags
+	track.Title = tags["title"]
+	track.Artist = tags["artist"]
+	track.Genre = tags["genre"]
+
+	if desc, ok := tags["description"]; ok {
+		track.Description = desc
+	} else if comment, ok := tags["comment"]; ok {
+		track.Description = comment
+	}
+
+	if bpmStr, ok := tags["bpm"]; ok {
+		if bpm, err := strconv.Atoi(bpmStr); err == nil {
+			track.BPM = bpm
+		}
+	}
+}
+
+func parseNativeTags(fp string, track *models.Track) {
+	f, err := os.Open(fp)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	m, err := tag.ReadFrom(f)
+	if err != nil {
+		return
+	}
+
+	track.Title = m.Title()
+	track.Artist = m.Artist()
+	if track.Genre == "" {
+		track.Genre = m.Genre()
+	}
+	if comment := m.Comment(); comment != "" && track.Description == "" {
+		track.Description = comment
+	}
+}
+
+func parseFilenameFallback(fp, ext string, track *models.Track) {
+	base := strings.TrimSuffix(filepath.Base(fp), ext)
+	parts := strings.Split(base, " - ")
+
+	if len(parts) >= 2 {
+		track.Artist = strings.TrimSpace(parts[0])
+		track.Title = strings.TrimSpace(parts[1])
+		return
+	}
+
+	track.Title = base
+	track.Artist = "Unknown Artist"
+}
+
+func readLyrics(fp, ext string) string {
+	lyricPath := strings.TrimSuffix(fp, ext) + ".lrc"
+	if _, err := os.Stat(lyricPath); err != nil {
+		lyricPath = strings.TrimSuffix(fp, ext) + ".txt"
+	}
+
+	lyricBytes, err := os.ReadFile(lyricPath)
+	if err != nil {
+		return ""
+	}
+
+	return cleanLyrics(string(lyricBytes))
 }

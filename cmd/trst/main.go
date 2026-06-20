@@ -41,7 +41,7 @@ func main() {
 		List:           CLI.List,
 		Jerk:           CLI.Jerk,
 		AllowProfanity: CLI.AllowProfanity,
-		
+
 		// Wire up the database control assignments
 		ClearCache:   CLI.ClearCache,
 		DeleteCached: CLI.DeleteCached,

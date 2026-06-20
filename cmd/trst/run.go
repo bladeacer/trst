@@ -24,9 +24,9 @@ type AppConfig struct {
 	AllowProfanity bool
 
 	ClearCache   bool
-	DeleteCached string 
+	DeleteCached string
 	ViewCached   bool
-	DisableCache bool   
+	DisableCache bool
 }
 
 func Execute(cfg *AppConfig) {
@@ -75,7 +75,7 @@ func Execute(cfg *AppConfig) {
 	}
 
 	// Step 3: Always print the execution header with up-to-date metrics
-	printExecutionHeader(track, cfg, targetModel) 
+	printExecutionHeader(track, cfg, targetModel)
 
 	// Step 4: Run the live generation pipeline using the specified persona config parameters
 	spinner := ui.NewSpinner(cfg.Persona)
@@ -99,7 +99,7 @@ func initCacheStore(disabled bool) cache.Service {
 
 	dbPath, err := cache.GetDatabasePath()
 	if err != nil {
-		return &cache.NopCache{} 
+		return &cache.NopCache{}
 	}
 
 	storage, err := cache.NewTrackCache(dbPath)
@@ -145,17 +145,17 @@ func interceptAdminCommands(cfg *AppConfig, store cache.Service) bool {
 			savedTime := time.Unix(entry.Meta.CreatedAt, 0).Format("2006-01-02 15:04")
 
 			// Print structured track details inline
-			fmt.Printf("- %-40s | Genre: %-12s | BPM: %-3d | Saved: %s\n", 
-			entry.TrackKey, 
-			entry.Meta.Genre, 
-			entry.Meta.BPM, 
-			savedTime,
-		)
+			fmt.Printf("- %-40s | Genre: %-12s | BPM: %-3d | Saved: %s\n",
+				entry.TrackKey,
+				entry.Meta.Genre,
+				entry.Meta.BPM,
+				savedTime,
+			)
+		}
+		return true
 	}
-	return true
-}
 
-if cfg.List {
+	if cfg.List {
 		persona.ListPersonas()
 		return true
 	}
@@ -195,5 +195,5 @@ func resolveTargetModel(modelFlag string) string {
 	if modelFlag != "" {
 		return modelFlag
 	}
-	return "" 
+	return ""
 }
