@@ -4,6 +4,10 @@
 
 ![Demo GIF](./demo.gif)
 
+> Song featured: Heroes Tonight by Janji and Johnning (NCS).
+> 
+> For legal reasons this is a joke.
+
 CLI for local LLMs to roast your music taste.
 
 ## Why the name?
