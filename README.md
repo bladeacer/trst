@@ -1,8 +1,8 @@
-![Test coverage svg](./coverage.svg)
+<!-- ![Test coverage svg](./coverage.svg) -->
 
 # trst
 
-![Demo Video with parent and brainrot personas roasting NCS Heroes Tonight](./demo.mp4)
+![Demo Video](./demo.mp4)
 
 CLI for local LLMs to roast your music taste.
 
