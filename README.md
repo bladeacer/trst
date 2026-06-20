@@ -1,4 +1,8 @@
+![Test coverage svg](./coverage.svg)
+
 # trst
+
+![Video Preview of parent and brainrot personas roasting NCS Heroes Tonight](./demo.mp4)
 
 CLI for local LLMs to roast your music taste.
 
