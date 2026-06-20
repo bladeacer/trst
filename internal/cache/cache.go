@@ -36,12 +36,12 @@ type TrackCache struct {
 
 type NopCache struct{}
 
-func (n *NopCache) GetTrackMeta(k string) (*TrackMeta, bool)                 { return nil, false }
-func (n *NopCache) SetTrackMeta(trackKey string, g string, b int) error      { return nil }
-func (n *NopCache) ClearAll() error                                           { return nil }
-func (n *NopCache) DeleteEntry(k string) error                                { return nil }
-func (n *NopCache) Close() error                                              { return nil }
-func (n *NopCache) ListAllEntries() ([]CacheEntry, error)                        { return nil, nil }
+func (n *NopCache) GetTrackMeta(k string) (*TrackMeta, bool)            { return nil, false }
+func (n *NopCache) SetTrackMeta(trackKey string, g string, b int) error { return nil }
+func (n *NopCache) ClearAll() error                                     { return nil }
+func (n *NopCache) DeleteEntry(k string) error                          { return nil }
+func (n *NopCache) Close() error                                        { return nil }
+func (n *NopCache) ListAllEntries() ([]CacheEntry, error)               { return nil, nil }
 
 func GetDatabasePath() (string, error) {
 	baseDir, err := os.UserCacheDir()

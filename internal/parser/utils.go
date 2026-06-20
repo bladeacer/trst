@@ -10,7 +10,7 @@ func cleanLyrics(raw string) string {
 	re := regexp.MustCompile(`\[\d+:\d+[\.\:]?\d*\]`)
 	var lines []string
 
-	for _, line := range strings.Split(raw, "\n") {
+	for line := range strings.SplitSeq(raw, "\n") {
 		cleanedLine := re.ReplaceAllString(line, "")
 		trimmed := strings.TrimSpace(cleanedLine)
 		if trimmed != "" {

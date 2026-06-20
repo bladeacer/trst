@@ -15,7 +15,7 @@ type Spinner struct {
 // NewSpinner initializes and kicks off the visual worker loop
 func NewSpinner(persona string) *Spinner {
 	// REMOVED: Redundant console printing logic block that caused the duplicate line
-	
+
 	s := &Spinner{
 		done: make(chan bool),
 	}
@@ -38,11 +38,11 @@ func NewSpinner(persona string) *Spinner {
 						bar[i] = ' '
 					}
 				}
-				
+
 				// Carriage return (\r) allows us to paint cleanly over the same terminal row
 				fmt.Printf("\rProcessing: [%s] (%.1fs)", string(bar), seconds)
 				os.Stdout.Sync()
-				
+
 				time.Sleep(100 * time.Millisecond)
 				seconds += 0.1
 				pos = (pos + 1) % barLength

@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -9,8 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bladeacer/trst/internal/persona"
 	"github.com/bladeacer/trst/internal/ansi"
+	"github.com/bladeacer/trst/internal/persona"
 	"github.com/bladeacer/trst/pkg/models"
 )
 
@@ -54,11 +55,13 @@ func AutoSelectOllamaModel() (string, error) {
 	if reader == nil {
 		return tags.Models[0].Name, nil
 	}
-	
+
 	fmt.Print("Enter option number: ")
+	scanner := bufio.NewScanner(os.Stdin)
 	var input string
-	fmt.Scanln(&input)
-	input = strings.TrimSpace(input)
+	if scanner.Scan() {
+		input = strings.TrimSpace(scanner.Text())
+	}
 
 	var choice int
 	_, err = fmt.Sscanf(input, "%d", &choice)
@@ -76,7 +79,7 @@ func PullOllamaModel(modelName string) error {
 		"stream": false,
 	}
 	body, _ := json.Marshal(payload)
-	
+
 	resp, err := http.Post("http://localhost:11434/api/pull", "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return err
@@ -110,7 +113,7 @@ func GenerateRoast(backend, model, systemPromptName string, track models.Track, 
 		extraDirectives = "\n- Spacing Rule: End every single bar/sentence with a raw newline character instantly. Do NOT compile sentences into paragraphs."
 	}
 
-	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Profanity: %s\n- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.%s", 
+	rigorousSystemPrompt := fmt.Sprintf("%s\n\nCRITICAL SYSTEM DIRECTIVES:\n- Profanity: %s\n- Guardrails: Do NOT use markdown headers (#), lists, or bullet points.%s",
 		baseSystemPrompt, profanityRule, extraDirectives)
 
 	fsString := StringifyFSProperties(track)
@@ -134,12 +137,12 @@ LENGTH CONSTRAINT:
 - Your response must be highly detailed and comprehensive. You must write a minimum of 150 words. Do not wrap up or finish your response early.
 
 Execute the roast matching these style and length rules now.`,
-		track.Title, 
-		track.Artist, 
-		track.Genre, 
-		track.BPM, 
+		track.Title,
+		track.Artist,
+		track.Genre,
+		track.BPM,
 		fsString,
-		track.Description, 
+		track.Description,
 		lyricsContext,
 	)
 

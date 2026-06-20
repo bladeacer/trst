@@ -1,4 +1,9 @@
-<!-- ![Test coverage svg](./coverage.svg) -->
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/bladeacer/trst?style=for-the-badge&logo=go)
+![GitHub License](https://img.shields.io/github/license/bladeacer/trst?style=for-the-badge)
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/bladeacer/trst)](https://goreportcard.com/report/github.com/bladeacer/trst)
+![Coverage](coverage.svg)
+
 
 # trst
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/bladeacer/trst/pkg/models"
@@ -47,9 +48,8 @@ func parseFile(fp string) (models.Track, bool) {
 				}
 			}
 			if probe.Format.BitRate != "" {
-				var br int
-				fmt.Sscanf(probe.Format.BitRate, "%d", &br)
-				if br > 0 {
+				// strconv.Atoi is faster and more idiomatic for simple strings to ints
+				if br, err := strconv.Atoi(probe.Format.BitRate); err == nil && br > 0 {
 					track.FSProperties["Bitrate"] = fmt.Sprintf("%d kbps", br/1000)
 				}
 			}
@@ -57,16 +57,18 @@ func parseFile(fp string) (models.Track, bool) {
 				track.Title = probe.Format.Tags["title"]
 				track.Artist = probe.Format.Tags["artist"]
 				track.Genre = probe.Format.Tags["genre"]
-				
+
 				// Map actual file metadata comments/descriptions specifically to Description
 				if desc, ok := probe.Format.Tags["description"]; ok {
 					track.Description = desc
 				} else if comment, ok := probe.Format.Tags["comment"]; ok {
 					track.Description = comment
 				}
-				
+
 				if bpmStr, ok := probe.Format.Tags["bpm"]; ok {
-					fmt.Sscanf(bpmStr, "%d", &track.BPM)
+					if bpm, err := strconv.Atoi(bpmStr); err == nil {
+						track.BPM = bpm
+					}
 				}
 			}
 		}

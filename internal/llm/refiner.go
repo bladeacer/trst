@@ -33,7 +33,7 @@ JSON Schema: {"genre": "string", "bpm": integer}`
 	}
 
 	if err != nil || jsonRaw == "" {
-		return 
+		return
 	}
 
 	jsonRaw = ExtractJSONBlock(jsonRaw)

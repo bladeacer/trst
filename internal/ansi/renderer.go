@@ -10,9 +10,9 @@ var (
 	reHighlight = regexp.MustCompile(`==([^=]+?)==`)
 	reBold      = regexp.MustCompile(`\*\*([^\*]+?)\*\*`)
 	reItalic    = regexp.MustCompile(`_([^_]+?)_`)
-	
+
 	// Captures single asterisk expressions like *sigh*, *facepalm*, *rolls eyes*
-	reAction    = regexp.MustCompile(`\*([^\*]+?)\*`)
+	reAction = regexp.MustCompile(`\*([^\*]+?)\*`)
 )
 
 // RenderTerminalMarkdown safely converts syntax blocks into ANSI escape sequences.
