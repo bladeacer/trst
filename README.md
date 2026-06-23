@@ -28,7 +28,7 @@ Those who cannot tolerate humour ranging from light-hearted banter to absolute e
 
 ## Features
 
-- Read `.lrc` when found in the same directory as audio file(s).
+- Reads `.lrc` when found in the same directory as audio file(s).
 - Semantically infer genre/sub-genre (best effort basis) via LLM
 - Local metadata cache for parsed songs
 > No CGO Sqlite database, defaults to where it makes sense on your platform
